@@ -1,11 +1,12 @@
 // src/pages/utilities/JoinLobby.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function JoinLobby() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation(); // Get the current location
   const API_BASE = `http://${window.location.hostname}:5000`;
 
   const handleSubmit = async (e) => {
@@ -15,8 +16,15 @@ function JoinLobby() {
     const response = await fetch(`${API_BASE}/api/mocks/session-by-code/${code.trim()}`);
     if (response.ok) {
       const session = await response.json();
-      // Use the session's main ID (_id) for the lobby URL
-      navigate(`/utilities/local-mock/lobby/${session._id}`);
+
+      // Check if the user is on the public-facing '/join' page
+      if (location.pathname === '/join') {
+        // Redirect to the self-contained participant lobby
+        navigate(`/local-mock/lobby/${session._id}`);
+      } else {
+        // Otherwise, use the default admin-facing lobby within the app layout
+        navigate(`/utilities/local-mock/lobby/${session._id}`);
+      }
     } else {
       setError('Invalid session code. Please try again.');
     }
