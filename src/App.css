@@ -105,9 +105,15 @@ a.button:hover {
 
 .question-controls {
   display: flex;
-  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
   border-top: 1px solid #eee;
   padding-top: 1rem;
+}
+
+.question-controls-left {
+  display: flex;
+  gap: 1rem;
 }
 
 /* Question Palette */
