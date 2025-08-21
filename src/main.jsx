@@ -13,8 +13,16 @@ import Editorials from './pages/Editorials.jsx';
 import GeneralStudies from './pages/GeneralStudies.jsx';
 import Sociology from './pages/Sociology.jsx';
 import AnswerWriting from './pages/AnswerWriting.jsx';
-import Utilities from './pages/Utilities.jsx';
+
+// Note view component for viewing individual notes
 import NoteView from './pages/NoteView.jsx';
+
+//Utilities
+import Utilities from './pages/Utilities.jsx';
+import PomodoroTimer from './pages/utilities/PomodoroTimer.jsx';
+import AdminSetup from './pages/utilities/AdminSetup.jsx';
+import JoinLobby from './pages/utilities/JoinLobby.jsx';
+import LobbyView from './pages/utilities/LobbyView.jsx';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -31,7 +39,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="general-studies" element={<GeneralStudies />} />
           <Route path="sociology" element={<Sociology />} />
           <Route path="answer-writing" element={<AnswerWriting />} />
+
+          // Nested route for utilities
           <Route path="utilities" element={<Utilities />} />
+          <Route path="utilities/pomodoro-timer" element={<PomodoroTimer />} />
+          <Route path="utilities/local-mock/setup" element={<AdminSetup />} />
+          <Route path="utilities/local-mock/join" element={<JoinLobby />} />
+          <Route path="utilities/local-mock/lobby/:sessionId" element={<LobbyView />} />
         </Route>
       </Routes>
     </BrowserRouter>

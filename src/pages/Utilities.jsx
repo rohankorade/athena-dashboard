@@ -1,12 +1,31 @@
 // src/pages/Utilities.jsx
 
 import React from 'react';
+import { Link } from 'react-router-dom';
+
+const utilities = [
+  { title: 'Pomodoro Timer', path: '/utilities/pomodoro-timer', description: 'Focus and break timer.' },
+  { title: 'Local Mock', path: '/utilities/local-mock/setup', description: 'Host a real-time exam over LAN.' },
+  { title: 'Join Mock Exam', path: '/utilities/local-mock/join', description: 'Join a session with a code.' },
+  { title: 'Pomodoro Timer', path: '/utilities/pomodoro-timer', description: 'Focus and break timer.' },
+  { title: 'Pomodoro Timer', path: '/utilities/pomodoro-timer', description: 'Focus and break timer.' }
+];
 
 function Utilities() {
   return (
-    <div style={{ padding: '2rem', textAlign: 'center' }}>
-      <h1>Utilities Page Content</h1>
-      <p>This is the placeholder for the Utilities section.</p>
+    <div className="page-container">
+      <div className="page-header">
+        <h1>Utilities</h1>
+        <p>A collection of tools to aid your preparation.</p>
+      </div>
+      <div className="utilities-grid">
+        {utilities.map(util => (
+          <Link to={util.path} key={util.title} className="utility-card">
+            <h3>{util.title}</h3>
+            <p>{util.description}</p>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

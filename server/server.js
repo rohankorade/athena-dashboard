@@ -3,15 +3,30 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require("socket.io");
 
 // Importing the models
 const Note = require('./models/Note');
 const Exam = require('./models/Exam'); // Assuming Exam.js is now in models
 const TestSeries = require('./models/TestSeries');
 const Test = require('./models/Test');
+const ExamSession = require('./models/ExamSession');
 
 // --- Express App Setup ---
 const app = express();
+
+// Create an HTTP server and attach Socket.IO to it
+// This allows us to use Socket.IO for real-time features in the future
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Your React app's address
+    methods: ["GET", "POST"]
+  }
+});
+
+// PORT Configuration
 const PORT = 5000;
 
 // --- Middleware ---
@@ -331,7 +346,92 @@ app.get('/api/editorials/:id', async (req, res) => {
     }
 });
 
+
+// LOCAL MOCK APIs
+
+// GET all available question paper collections from the 'localMocks' db
+app.get('/api/mocks/collections', async (req, res) => {
+    try {
+        const mockDb = mongoose.connection.useDb('localMocks');
+        const collections = await mockDb.db.listCollections().toArray();
+        const collectionNames = collections.map(c => c.name);
+        res.json(collectionNames);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching collections', error });
+    }
+});
+
+// POST to create a new exam session (lobby)
+app.post('/api/mocks/create-session', async (req, res) => {
+    try {
+        const { collectionName } = req.body;
+        if (!collectionName) {
+            return res.status(400).json({ message: 'Collection name is required.' });
+        }
+        // Generate a simple, random 6-character code
+        const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+        const newSession = new ExamSession({
+            sessionCode,
+            examCollectionName: collectionName,
+        });
+        await newSession.save();
+        res.status(201).json(newSession);
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating session', error });
+    }
+});
+
+// GET a session by its short code
+app.get('/api/mocks/session-by-code/:code', async (req, res) => {
+    try {
+        const session = await ExamSession.findOne({ sessionCode: req.params.code });
+        if (!session) {
+            return res.status(404).json({ message: "Session not found." });
+        }
+        res.json(session);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching session', error });
+    }
+});
+
+
+// --- REAL-TIME LOGIC with Socket.io ---
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  const broadcastLobbyUpdate = async (sessionId) => {
+    const updatedSession = await ExamSession.findById(sessionId);
+    io.to(sessionId).emit('lobby_update', updatedSession);
+  };
+
+  socket.on('join_lobby', (sessionId) => {
+    socket.join(sessionId);
+    console.log(`User ${socket.id} joined lobby: ${sessionId}`);
+    broadcastLobbyUpdate(sessionId); // Send initial update to the new user
+  });
+  
+  socket.on('participant_join', async ({ sessionId, username }) => {
+    await ExamSession.findByIdAndUpdate(sessionId, {
+        $push: { participants: { username, isReady: false } }
+    });
+    broadcastLobbyUpdate(sessionId);
+  });
+  
+  socket.on('participant_ready', async ({ sessionId, username, isReady }) => {
+    await ExamSession.updateOne(
+        { _id: sessionId, "participants.username": username },
+        { $set: { "participants.$.isReady": isReady } }
+    );
+    broadcastLobbyUpdate(sessionId);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('A user disconnected:', socket.id);
+  });
+});
+
 // Start the Server
-app.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
