@@ -14,8 +14,6 @@ const Test = require('./models/Test');
 const ExamSession = require('./models/ExamSession');
 const ExamAttempt = require('./models/ExamAttempt');
 
-const activeExamTimers = {};
-
 // --- Express App Setup ---
 const app = express();
 
@@ -41,6 +39,11 @@ const mongoURI = 'mongodb://localhost:27017/upscDashboard';
 mongoose.connect(mongoURI)
     .then(() => console.log('MongoDB connected successfully.'))
     .catch(err => console.error('MongoDB connection error:', err));
+
+// Get a connection to the localMocks DB and compile models on it
+const mockDb = mongoose.connection.useDb('localMocks', { useCache: true });
+const MockExamSession = mockDb.model('ExamSession', require('./models/ExamSession').schema);
+const MockExamAttempt = mockDb.model('ExamAttempt', require('./models/ExamAttempt').schema);
 
 
 // --- API Routes ---
@@ -374,7 +377,7 @@ app.post('/api/mocks/create-session', async (req, res) => {
         // Generate a simple, random 6-character code
         const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        const newSession = new ExamSession({
+        const newSession = new MockExamSession({
             sessionCode,
             examCollectionName: collectionName,
         });
@@ -388,7 +391,7 @@ app.post('/api/mocks/create-session', async (req, res) => {
 // GET a session by its short code
 app.get('/api/mocks/session-by-code/:code', async (req, res) => {
     try {
-        const session = await ExamSession.findOne({ sessionCode: req.params.code });
+        const session = await MockExamSession.findOne({ sessionCode: req.params.code });
         if (!session) {
             return res.status(404).json({ message: "Session not found." });
         }
@@ -416,7 +419,7 @@ app.get('/api/exam-questions/:collectionName', async (req, res) => {
 app.get('/api/exam-attempt/:attemptId', async (req, res) => {
     try {
         const { attemptId } = req.params;
-        const attempt = await ExamAttempt.findById(attemptId);
+        const attempt = await MockExamAttempt.findById(attemptId);
         if (!attempt) {
             return res.status(404).json({ message: "Exam attempt not found." });
         }
@@ -432,7 +435,7 @@ io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
   const broadcastLobbyUpdate = async (sessionId) => {
-    const updatedSession = await ExamSession.findById(sessionId);
+    const updatedSession = await MockExamSession.findById(sessionId);
     io.to(sessionId).emit('lobby_update', updatedSession);
   };
 
@@ -446,14 +449,14 @@ io.on('connection', (socket) => {
     // Store the username on the socket object for future identification
     socket.username = username;
 
-    await ExamSession.findByIdAndUpdate(sessionId, {
+    await MockExamSession.findByIdAndUpdate(sessionId, {
         $push: { participants: { username, isReady: false } }
     });
     broadcastLobbyUpdate(sessionId);
   });
   
   socket.on('participant_ready', async ({ sessionId, username, isReady }) => {
-    await ExamSession.updateOne(
+    await MockExamSession.updateOne(
         { _id: sessionId, "participants.username": username },
         { $set: { "participants.$.isReady": isReady } }
     );
@@ -462,15 +465,10 @@ io.on('connection', (socket) => {
 
   socket.on('start_exam', async (sessionId) => {
     try {
-        const session = await ExamSession.findById(sessionId);
-        if (!session) { return; }
+        const session = await MockExamSession.findById(sessionId);
+        if (!session) { return; } // Handle case where session is not found
 
-        // Prevent starting a timer if one is already running for this session
-        if (activeExamTimers[sessionId]) {
-            console.log(`Timer already active for session: ${sessionId}`);
-            return;
-        }
-
+        // 1. Get the questions to determine the count for the initial answers array
         const mockDb = mongoose.connection.useDb('localMocks');
         const questions = await mockDb.db.collection(session.examCollectionName).find({}).toArray();
         const initialAnswers = questions.map(q => ({
@@ -478,25 +476,26 @@ io.on('connection', (socket) => {
             status: 'unseen'
         }));
 
+        // 2. Create an ExamAttempt for each participant
         const startTime = new Date();
-        const timeLimit = 7200; // Default time limit from schema
-
         const createdAttempts = await Promise.all(
             session.participants.map(participant => {
-                const newAttempt = new ExamAttempt({
+                const newAttempt = new MockExamAttempt({
                     examSession: session._id,
                     username: participant.username,
                     examCollectionName: session.examCollectionName,
                     startTime: startTime,
-                    timeLimit: timeLimit,
                     answers: initialAnswers,
+                    // timeLimit can be customized later if needed
                 });
                 return newAttempt.save();
             })
         );
 
+        // 3. Map usernames to their new attempt IDs
         const attemptMap = Object.fromEntries(createdAttempts.map(a => [a.username, a._id]));
 
+        // 4. Emit a personalized 'exam_started' event to each socket in the lobby
         const socketsInRoom = await io.in(sessionId).fetchSockets();
         for (const sock of socketsInRoom) {
             const userAttemptId = attemptMap[sock.username];
@@ -505,33 +504,15 @@ io.on('connection', (socket) => {
             }
         }
 
-        // --- NEW SERVER-SIDE TIMER LOGIC ---
-        const timerId = setInterval(() => {
-            const now = new Date();
-            const elapsedSeconds = Math.floor((now - startTime) / 1000);
-            const remainingTime = Math.max(0, timeLimit - elapsedSeconds);
-
-            io.to(sessionId).emit('timer_tick', { remainingTime });
-
-            if (remainingTime <= 0) {
-                console.log(`Timer finished for session: ${sessionId}`);
-                clearInterval(timerId);
-                delete activeExamTimers[sessionId];
-                // Optionally, you could force-submit all exams here
-            }
-        }, 1000);
-
-        activeExamTimers[sessionId] = timerId;
-        console.log(`Timer started for session: ${sessionId}`);
-
     } catch (error) {
         console.error("Error starting exam:", error);
+        // Optionally, emit an error event back to the admin who tried to start it
     }
   });
 
   socket.on('update_answer', async ({ attemptId, question_number, selected_option_index, status }) => {
     try {
-        await ExamAttempt.updateOne(
+        await MockExamAttempt.updateOne(
             { _id: attemptId, "answers.question_number": question_number },
             { $set: {
                 "answers.$.selected_option_index": selected_option_index,
@@ -546,7 +527,7 @@ io.on('connection', (socket) => {
 
   socket.on('submit_exam', async ({ attemptId }) => {
     try {
-      const attempt = await ExamAttempt.findById(attemptId);
+      const attempt = await MockExamAttempt.findById(attemptId);
       if (!attempt || attempt.isCompleted) { return; }
 
       const mockDb = mongoose.connection.useDb('localMocks');
