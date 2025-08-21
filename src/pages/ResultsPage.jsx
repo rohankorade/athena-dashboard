@@ -81,7 +81,7 @@ function ResultsPage() {
 
                     return (
                         <div key={question.question_number} className={`result-item ${resultClass}`} style={{marginBottom: '1.5rem', border: '1px solid #ddd', padding: '1rem'}}>
-                            <h4>Q{question.question_number}: {question.question}</h4>
+                            <h4 className="result-question-text">Q{question.question_number}: {question.question}</h4>
                             <p><strong>Your Answer:</strong> {userAnswer?.selected_option_index !== null ? question.options[userAnswer.selected_option_index] : 'Not Answered'}</p>
                             {userAnswer?.status === 'answered' && !isCorrect && (
                                 <p><strong>Correct Answer:</strong> {question.options[correctAnswerIndex]}</p>

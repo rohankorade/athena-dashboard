@@ -1051,6 +1051,22 @@ a.button:hover {
 }
 
 
+/* --- Results Page Styles --- */
+.detailed-results {
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 1rem; /* Add padding for scrollbar */
+}
+
+.result-question-text {
+  white-space: pre-wrap; /* Ensures question formatting is preserved */
+  font-weight: 400;
+  font-size: 1.2rem;
+  line-height: 1.6;
+}
+
+
 /* --- Pomodoro Timer Styles --- */
 
 .pomodoro-container {
