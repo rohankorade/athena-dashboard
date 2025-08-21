@@ -127,6 +127,13 @@ async function syncVault() {
                 console.log(`  -> Added new athena_id: ${athena_id}`);
             }
 
+            // Maintaining isRead status:
+            // 1. Check the database for the existing note
+            const existingNote = await Note.findById(athena_id);
+            // 2. Determine the isRead status
+            // If the note exists in the DB, use its status. Otherwise, default to false.
+            const isReadStatus = existingNote ? existingNote.isRead : false;
+
             const contentSections = parseNoteContent(parsedMatter.content);
 
             // Prepare the full document for MongoDB
@@ -134,7 +141,7 @@ async function syncVault() {
                 _id: athena_id,
                 title: title,
                 filePath: relativePath,
-                isRead: parsedMatter.data.isRead || false,
+                isRead: isReadStatus,
                 frontmatter: parsedMatter.data,
                 ...contentSections // Add the parsed content sections
             };

@@ -35,7 +35,7 @@ function PillInput({ terms, setTerms }) {
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Type search terms..."
+        placeholder="Search Parameters"
         className="pill-input"
       />
     </div>

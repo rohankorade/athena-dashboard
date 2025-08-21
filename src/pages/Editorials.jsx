@@ -168,7 +168,7 @@ function Editorials() {
             <main className="right-column">
               {selectedDate && (
                 <h3 className="right-column-header">
-                  Editorials for {`${selectedDate.day} ${MONTH_NAMES[selectedDate.month]} ${selectedDate.year}`}
+                  {`${selectedDate.day} ${MONTH_NAMES[selectedDate.month]} ${selectedDate.year}`}
                 </h3>
               )}
               {notes.length > 0 ? (
@@ -176,7 +176,7 @@ function Editorials() {
               ) : (
                 <div className="dashboard-view">
                   <StatsDashboard stats={stats} />
-                  <NextToRead note={nextToRead} onUpdate={fetchDashboardData} />
+                  <NextToRead note={nextToRead} onToggleRead={toggleReadStatus} />
                 </div>
               )}
             </main>
