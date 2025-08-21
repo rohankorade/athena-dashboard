@@ -72,6 +72,10 @@ function ExamPage() {
         const attemptData = await attemptRes.json();
         setAttempt(attemptData);
         setRemainingTime(attemptData.timeLimit); // Initialize timer from attempt data
+
+        // Join the session's socket.io room to receive timer ticks
+        socket.emit('join_lobby', attemptData.examSession);
+
         if (attemptData.examCollectionName) {
           const questionsRes = await fetch(`${API_BASE}/api/exam-questions/${attemptData.examCollectionName}`);
           const questionsData = await questionsRes.json();
