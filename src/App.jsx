@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { Outlet } from 'react-router-dom'; // Import Outlet
-import './App.css';
 import WelcomeMessage from './components/WelcomeMessage';
 
 function App() {

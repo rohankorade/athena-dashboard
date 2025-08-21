@@ -5,6 +5,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App.jsx'
 import './index.css'
+import './App.css'
 
 // Import our new page components
 import DashboardHome from './pages/DashboardHome.jsx';
