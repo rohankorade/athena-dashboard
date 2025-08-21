@@ -5,6 +5,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App.jsx'
 import './index.css'
+import './App.css'
 
 // Import our new page components
 import DashboardHome from './pages/DashboardHome.jsx';
@@ -18,18 +19,32 @@ import AnswerWriting from './pages/AnswerWriting.jsx';
 import NoteView from './pages/NoteView.jsx';
 
 //Utilities
+import ParticipantLayout from './components/ParticipantLayout.jsx';
 import Utilities from './pages/Utilities.jsx';
 import PomodoroTimer from './pages/utilities/PomodoroTimer.jsx';
 import AdminSetup from './pages/utilities/AdminSetup.jsx';
 import JoinLobby from './pages/utilities/JoinLobby.jsx';
 import LobbyView from './pages/utilities/LobbyView.jsx';
+import ExamPage from './pages/ExamPage.jsx';
+import ResultsPage from './pages/ResultsPage.jsx';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
-        {/* App component is the parent layout */}
+        {/* --- Public, Self-Contained Routes --- */}
+        {/* These routes are wrapped in a minimal layout to provide a consistent full-screen background */}
+        <Route element={<ParticipantLayout />}>
+          <Route path="/join" element={<JoinLobby />} />
+          <Route path="/local-mock/lobby/:sessionId" element={<LobbyView />} />
+          <Route path="/exam/:attemptId" element={<ExamPage />} />
+          <Route path="/results/:attemptId" element={<ResultsPage />} />
+        </Route>
+
+
+        {/* --- Main Application Routes (with Layout) --- */}
+        {/* App component is the parent layout for all nested routes */}
         <Route path="/" element={<App />}>
           {/* Child pages that will render inside App's <Outlet> */}
           <Route index element={<DashboardHome />} />
@@ -40,11 +55,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="sociology" element={<Sociology />} />
           <Route path="answer-writing" element={<AnswerWriting />} />
 
-          // Nested route for utilities
+          {/* Nested routes for utilities, visible within the main app layout */}
           <Route path="utilities" element={<Utilities />} />
           <Route path="utilities/pomodoro-timer" element={<PomodoroTimer />} />
           <Route path="utilities/local-mock/setup" element={<AdminSetup />} />
           <Route path="utilities/local-mock/join" element={<JoinLobby />} />
+          {/* This route is for the admin to view the lobby within the dashboard */}
           <Route path="utilities/local-mock/lobby/:sessionId" element={<LobbyView />} />
         </Route>
       </Routes>

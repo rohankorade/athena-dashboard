@@ -1,63 +1,63 @@
 // src/pages/utilities/LobbyView.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
 const API_BASE = `http://${window.location.hostname}:5000`;
 
+// Create the socket connection once and reuse it across the component's lifecycle.
+const socket = io(API_BASE);
+
 function LobbyView() {
   const { sessionId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [username, setUsername] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
 
-  useEffect(() => {
-    // Initialize socket connection
-    const socket = io(API_BASE);
+  const isAdminView = location.pathname.startsWith('/utilities');
 
-    // Check if the user has a saved username and session ID
+  useEffect(() => {
     const savedUsername = sessionStorage.getItem('exam_username');
     const savedSessionId = sessionStorage.getItem('exam_sessionId');
     if (savedUsername && savedSessionId === sessionId) {
-      // If we're in the same lobby as before, restore the user's state
       setUsername(savedUsername);
       setIsRegistered(true);
     }
 
-    // Connect to the specific lobby room
     socket.emit('join_lobby', sessionId);
     
-    // Listen for updates from the server
-    socket.on('lobby_update', (updatedSession) => {
-      setSession(updatedSession);
+    socket.on('lobby_update', setSession);
+
+    socket.on('exam_started', ({ attemptId }) => {
+      navigate(`/exam/${attemptId}`);
     });
     
-    // Clean up on component unmount
     return () => {
       socket.off('lobby_update');
-      socket.disconnect();
+      socket.off('exam_started');
     };
-  }, [sessionId]);
+  }, [sessionId, navigate]);
 
   const handleRegister = (e) => {
     e.preventDefault();
-    const trimmedUsername = username.trim(); // Create the variable here
+    const trimmedUsername = username.trim();
     if (!trimmedUsername) return;
 
-    // Emit registration event to the server
-    const socket = io(API_BASE);
     socket.emit('participant_join', { sessionId, username: trimmedUsername });
     setIsRegistered(true);
-
-    // Save the username and session ID to sessionStorage
     sessionStorage.setItem('exam_username', trimmedUsername);
     sessionStorage.setItem('exam_sessionId', sessionId);
   };
   
   const handleReadyToggle = (e) => {
     const isReady = e.target.checked;
-    const socket = io(API_BASE);
     socket.emit('participant_ready', { sessionId, username, isReady });
+  };
+
+  const handleStartExam = () => {
+    socket.emit('start_exam', sessionId);
   };
   
   if (!session) {
@@ -65,8 +65,6 @@ function LobbyView() {
   }
   
   const currentUser = session.participants.find(p => p.username === username);
-
-  // Check if all participants are ready
   const allReady = session.participants.length > 0 && session.participants.every(p => p.isReady);
 
   return (
@@ -101,12 +99,14 @@ function LobbyView() {
             </label>
           </div>
           
-          <div className="admin-controls">
-            <button className="button button-primary" disabled={!allReady}>
-              Start Exam for All
-            </button>
-            {!allReady && <p>The exam can start once all participants are ready.</p>}
-          </div>
+          {isAdminView && (
+            <div className="admin-controls">
+              <button className="button button-primary" onClick={handleStartExam} disabled={!allReady}>
+                Start Exam for All
+              </button>
+              {!allReady && <p>The exam can start once all participants are ready.</p>}
+            </div>
+          )}
         </div>
       )}
     </div>
