@@ -57,17 +57,31 @@ function ResultsPage() {
 
     return (
         <div className="page-container" style={{padding: '2rem'}}>
-            <div className="page-header">
-                <h1>Exam Results</h1>
-                <h2>Test: {attempt.examCollectionName}</h2>
-                <h3>User: {attempt.username}</h3>
-            </div>
-
-            <div className="results-summary" style={{display: 'flex', gap: '2rem', margin: '2rem 0'}}>
-                <div><strong>Total Score:</strong> {attempt.finalScore}</div>
-                <div><strong style={{color: 'green'}}>Correct:</strong> {correctCount}</div>
-                <div><strong style={{color: 'red'}}>Incorrect:</strong> {incorrectCount}</div>
-                <div><strong>Unanswered:</strong> {unansweredCount}</div>
+            <div className="results-header">
+                <div className="results-header-info">
+                    <h1>{attempt.examCollectionName}</h1>
+                    <p>Submitted by: {attempt.username}</p>
+                </div>
+                <div className="results-header-stats">
+                    <div className="stats-grid">
+                        <div className="stat-item">
+                            <span className="stat-label">Total Score</span>
+                            <span className="stat-value">{attempt.finalScore}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Correct</span>
+                            <span className="stat-value" style={{ color: 'var(--success-green, #28a745)' }}>{correctCount}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Incorrect</span>
+                            <span className="stat-value" style={{ color: 'var(--danger-red, #dc3545)' }}>{incorrectCount}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Unanswered</span>
+                            <span className="stat-value">{unansweredCount}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="detailed-results">
