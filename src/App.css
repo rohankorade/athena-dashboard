@@ -1,0 +1,547 @@
+/* src/App.css */
+/* --- 1. Global Reset & Body --- */
+* {
+  box-sizing: border-box;
+}
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Enforces no-scroll on the entire page */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background-color: #f0f2f5;
+  color: #333;
+}
+
+/* --- 2. Main Flexbox Layout --- */
+.dashboard-container {
+  display: flex;
+  flex-direction: column; /* Stacks header, main, and footer vertically */
+  height: 100vh;
+  width: 100vw;
+}
+
+.welcome-section {
+  flex-shrink: 0; /* Prevents the header from shrinking */
+}
+
+.main-content {
+  flex-grow: 1; /* Makes the main section fill all available vertical space */
+  display: flex;
+  flex-direction: column; /* Stacks countdown and performance vertically */
+  min-height: 0; /* A required hack for nested flex layouts */
+  padding: 0 0.5rem; /* Horizontal padding for the content area */
+}
+
+.countdown-section {
+  flex-shrink: 0; /* Prevents the countdown from shrinking */
+  margin: 0.25rem 0 0.125rem 0;
+}
+
+.performance-section {
+  flex-grow: 1; /* Makes the performance section fill the rest of the space */
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Allows content inside to scroll correctly */
+  margin: 0.125rem 0;
+}
+
+
+/* --- 3. Section Base Styles (Simplified) --- */
+.welcome-section, .countdown-section, .performance-section {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+}
+.welcome-section {
+  padding: 0.75rem 1rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+.countdown-section, .performance-section {
+  padding: 1rem;
+  border-radius: 8px;
+}
+.footer-nav-section {
+  flex-shrink: 0; /* Prevents the footer from shrinking */
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  margin: 0.125rem 0.5rem 0.5rem 0.5rem;
+  border-radius: 8px;
+  display: flex; /* Makes this a flex container */
+  padding: 0.5rem; /* Adjust padding */
+  gap: 0.5rem; /* Sets the space between buttons */
+}
+
+
+/* --- 4. Performance Section Internal Layout (Your existing code is correct) --- */
+.performance-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.performance-content {
+  flex-grow: 1;
+  display: flex;
+  gap: 0.5rem;
+  min-height: 0;
+}
+.performance-table-container {
+  flex-basis: 20%;
+  overflow-y: auto;
+}
+.performance-chart-container {
+  flex-basis: 80%;
+}
+
+
+.countdown-section {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+}
+
+.countdown-container {
+  display: flex;
+  gap: 1.5rem; /* Space between the primary card and the grid */
+}
+
+/* --- Primary Card (Left) --- */
+.primary-card {
+  flex-basis: 35%; /* Takes up 35% of the width */
+  padding: 1.5rem;
+  text-align: center;
+  border-right: 1px solid #eee;
+}
+
+.primary-card h3 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.divider {
+  height: 2px;
+  width: 50px;
+  background-color: #007bff;
+  margin: 1rem auto;
+}
+
+.days-remaining-large {
+  font-size: 5rem;
+  font-weight: bold;
+  color: #007bff;
+  line-height: 1;
+}
+
+.days-text {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+/* --- Secondary Grid (Right) --- */
+.secondary-grid {
+  flex-basis: 65%; /* Takes up the remaining width */
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.secondary-card {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.days-remaining-small {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.secondary-card p {
+  margin: 0.5rem 0 0 0;
+  color: #555;
+  font-size: 1.1rem;
+}
+
+/* --- Performance Header Styles --- */
+/* Performance Header: fixed */
+.performance-header select {
+  flex-grow: 1;
+  font-size: 1.1rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: white;
+  color: #333;
+}
+
+
+/* --- Modal Form Styles --- */
+.modal-form .form-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.modal-form label {
+  font-weight: 500;
+  color: #333;
+}
+
+.modal-form input,
+.modal-form select {
+  width: 60%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+/* --- Themed Button Styles --- */
+.button {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+.button-primary {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  margin: 3px;
+}
+
+.button-secondary {
+  background-color: white;
+  color: #007bff;
+  border-color: #007bff;
+  margin: 3px;
+}
+
+.score-preview {
+  margin-top: 1.5rem !important;
+  font-size: 1.2rem;
+}
+
+.score-preview .score-value {
+  font-weight: bold;
+  color: #007bff;
+}
+
+
+/* --- Performance Table Styles --- */
+.performance-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: black;
+}
+
+.performance-table th,
+.performance-table td {
+  padding: 0.2rem;
+  text-align: left;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.performance-table thead th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.performance-table tbody tr:hover {
+  background-color: #f1f3f5;
+}
+
+.performance-table .score-cell {
+  font-weight: bold;
+}
+
+
+/* --- Footer Navigation Styles --- */
+.nav-button {
+  flex: 1; /* This is the magic: makes all buttons grow equally to fill the space */
+  padding: 0.5rem 0; /* Vertical padding */
+  font-size: 1rem;
+  font-weight: 500;
+  background-color: #f8f9fa; /* A light grey background */
+  color: #333;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-button:hover {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+
+/* The Editorials Section Style */
+/* --- Reusable Page Layout Styles --- */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* <-- Change to this */
+  min-height: 0; /* <-- Add this for safety */
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.page-header {
+  flex-shrink: 0; /* Prevents the header from shrinking */
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1.1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.page-content {
+  flex-grow: 1; /* Makes the content area fill all remaining vertical space */
+  display: flex;
+  gap: 1rem; /* Space between the two columns */
+  min-height: 0; /* Required for nested flex layouts to work correctly */
+}
+
+/* --- Editorials Page Styles (Final Corrected Version) --- */
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.page-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1.1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.page-content {
+  flex-grow: 1;
+  display: flex;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.left-column {
+  flex-basis: 20%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 0.4rem;
+  overflow-y: auto; /* Allows this column to scroll if content is too long */
+}
+
+.right-column {
+  flex-basis: 80%;
+  background-color: transparent;
+  border-radius: 8px;
+  overflow-y: auto;
+}
+.right-column-header {
+  margin: 0 0 1rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.breadcrumb {
+  flex-shrink: 0;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  font-weight: 500;
+}
+
+.drill-down-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.back-button {
+  flex-shrink: 0;
+  text-align: center;
+  text-decoration: none;
+  margin-top: 10px;
+}
+
+/* --- (Styles for elements inside the columns) --- */
+
+.breadcrumb-link {
+  cursor: pointer;
+  color: #007bff;
+}
+.drill-down-list li {
+  padding: 0.6rem 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  margin-right: 0.4rem;
+}
+.drill-down-list li:hover {
+  background-color: #e9ecef;
+}
+.drill-down-list li.active-day {
+  background-color: #007bff;
+  color: white;
+  font-weight: bold;
+}
+
+/* Right Column and Note List Item Styles (can remain the same) */
+.note-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #fff;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.note-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
+}
+.note-date {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin: 0.25rem 0 0.5rem 0;
+}
+.status-indicator {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  font-weight: 500;
+  margin-top: 0.25rem;
+  display: inline-block;
+}
+.status-indicator.read {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+.status-indicator.unread {
+  background-color: #f8d7da;
+  color: #842029;
+}
+.note-actions {
+  display: flex;
+  flex-direction: column; /* <-- Change to column */
+  gap: 0.5rem;
+}
+.small-button {
+  padding: 0.25rem 0.75rem !important;
+  font-size: 0.8rem !important;
+  width: 100%;
+}
+
+/* --- Stats Dashboard Styles --- */
+
+.stats-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.stat-card {
+  flex: 1;
+  text-align: center;
+  padding: 1.5rem 1rem; /* Adjust padding */
+  background-color: #fff; /* <-- Change to white */
+  border: 1px solid #e9ecef; /* <-- Add a border */
+  border-radius: 8px;
+}
+
+.stat-value {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.stat-label {
+  font-size: 1.1rem;
+  color: #495057;
+  margin-top: 0.5rem;
+}
+
+
+/* --- Editorials Dashboard View Styles --- */
+
+.dashboard-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.pending-reading-list h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.next-to-read-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.all-read-message {
+  padding: 2rem;
+  text-align: center;
+  font-size: 1.2rem;
+  color: #6c757d;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
