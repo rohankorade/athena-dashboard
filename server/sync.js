@@ -37,8 +37,34 @@ class AthenaIdGenerator {
 }
 const idGenerator = new AthenaIdGenerator();
 
+// --- 3. NEW CONTENT PARSER ---
+// This function takes the main content of the note and splits it into sections.
+function parseNoteContent(contentString) {
+    const sections = {
+        rawContent: '',
+        analysisContent: '',
+        keywordsContent: '',
+    };
 
-// --- 3. CORE LOGIC ---
+    // Split the content by the '---' horizontal rule
+    const blocks = contentString.split(/\n---\n/).map(block => block.trim());
+
+    // The first block is the H1 title, so we look at the rest
+    blocks.slice(1).forEach(block => {
+        if (block.startsWith('### Raw')) {
+            sections.rawContent = block.replace(/^###\s*Raw\s*\n/, '').trim();
+        } else if (block.startsWith('### Analysis')) {
+            sections.analysisContent = block.replace(/^###\s*Analysis\s*\n/, '').trim();
+        } else if (block.startsWith('### Keywords')) {
+            sections.keywordsContent = block.replace(/^###\s*Keywords\s*\n/, '').trim();
+        }
+    });
+
+    return sections;
+}
+
+
+// --- 4. CORE LOGIC ---
 
 // Finds all .md files recursively in a directory
 async function findMarkdownFiles(dir) {
@@ -101,13 +127,16 @@ async function syncVault() {
                 console.log(`  -> Added new athena_id: ${athena_id}`);
             }
 
-            // Prepare the document for MongoDB
+            const contentSections = parseNoteContent(parsedMatter.content);
+
+            // Prepare the full document for MongoDB
             const noteDocument = {
                 _id: athena_id,
                 title: title,
                 filePath: relativePath,
-                isRead: parsedMatter.data.isRead || false, // Set default if missing
-                frontmatter: parsedMatter.data
+                isRead: parsedMatter.data.isRead || false,
+                frontmatter: parsedMatter.data,
+                ...contentSections // Add the parsed content sections
             };
 
             // Update or insert (upsert) the note in the database

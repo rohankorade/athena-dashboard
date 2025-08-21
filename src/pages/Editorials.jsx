@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import NoteListItem from '../components/NoteListItem';
 import StatsDashboard from '../components/StatsDashboard';
 import NextToRead from '../components/NextToRead';
+import PillInput from '../components/PillInput';
 
 // Month names for display
 const MONTH_NAMES = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -21,6 +22,12 @@ function Editorials() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [stats, setStats] = useState(null);
   const [nextToRead, setNextToRead] = useState(null);
+
+  // --- State for Search Mode ---
+  const [searchTerms, setSearchTerms] = useState([]);
+  const [searchMode, setSearchMode] = useState('OR'); // 'OR' or 'AND'
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
 
   const fetchDashboardData = () => {
     // Fetch Stats
@@ -103,43 +110,78 @@ function Editorials() {
     </li>
   ));
 
+  // --- Search Handlers ---
+  const handleSearch = async () => {
+    if (searchTerms.length === 0) return;
+    setIsSearching(true);
+    const termsQuery = searchTerms.join(',');
+    console.log("Searching for terms:", termsQuery, "with mode:", searchMode); // Log the search terms and mode
+    // Make the API call to search editorials
+    const response = await fetch(`http://localhost:5000/api/editorials/search?terms=${termsQuery}&mode=${searchMode}`);
+    const data = await response.json();
+    console.log("Received search data:", data); // Log the received data
+    setSearchResults(data);
+  };
+
+  const clearSearch = () => {
+    setIsSearching(false);
+    setSearchTerms([]);
+    setSearchResults([]);
+  };
+
   return (
     <div className="page-container">
-      <div className="page-header">
-        <input type="search" placeholder="Search editorials..." className="search-input"/>
+      <div className="page-header search-header">
+        <PillInput terms={searchTerms} setTerms={setSearchTerms} />
+        <div className="search-controls">
+          <div className="search-mode-selector">
+            <label><input type="radio" value="OR" checked={searchMode === 'OR'} onChange={() => setSearchMode('OR')} /> Match ANY (OR)</label>
+            <label><input type="radio" value="AND" checked={searchMode === 'AND'} onChange={() => setSearchMode('AND')} /> Match ALL (AND)</label>
+          </div>
+          <button onClick={handleSearch} className="button button-primary">Search</button>
+          {isSearching && <button onClick={clearSearch} className="button button-secondary">Clear</button>}
+        </div>
       </div>
       <div className="page-content">
-        <aside className="left-column">
-          <div className="breadcrumb">
-            <span className="breadcrumb-link" onClick={goBackToYears}>🏠</span>
-            {selectedYear && <span>&nbsp;&gt;&nbsp;<span className="breadcrumb-link" onClick={goBackToMonths}>{selectedYear}</span></span>}
-            {selectedMonth && <span>&nbsp;&gt;&nbsp;{MONTH_NAMES[selectedMonth]}</span>}
-          </div>
-          <ul className="drill-down-list">
-            {viewLevel === 'years' && renderYears()}
-            {viewLevel === 'months' && selectedYear && renderMonths()}
-            {viewLevel === 'days' && selectedMonth && renderDays()}
-          </ul>
-          <Link to="/" className="button button-secondary back-button">
-            Back to Dashboard
-          </Link>
-        </aside>
-        <main className="right-column">
-          {selectedDate && (
-            <h3 className="right-column-header">
-              Editorials for {`${selectedDate.day} ${MONTH_NAMES[selectedDate.month]} ${selectedDate.year}`}
-            </h3>
-          )}
-
-          {notes.length > 0 ? (
-            notes.map(note => <NoteListItem key={note._id} note={note} onToggleRead={toggleReadStatus} />)
-          ) : (
-            <div className="dashboard-view">
-              <StatsDashboard stats={stats} />
-              <NextToRead note={nextToRead} onUpdate={fetchDashboardData} />
-            </div>
-          )}
-        </main>
+        {isSearching ? (
+          <main className="right-column full-width">
+            <h3>Search Results ({searchResults.length})</h3>
+            {searchResults.map(note => <NoteListItem key={note._id} note={note} onToggleRead={() => {}} />)}
+          </main>
+        ) : (
+          <>
+            <aside className="left-column">
+              <div className="breadcrumb">
+                <span className="breadcrumb-link" onClick={goBackToYears}>🏠</span>
+                {selectedYear && <span>&nbsp;&gt;&nbsp;<span className="breadcrumb-link" onClick={goBackToMonths}>{selectedYear}</span></span>}
+                {selectedMonth && <span>&nbsp;&gt;&nbsp;{MONTH_NAMES[selectedMonth]}</span>}
+              </div>
+              <ul className="drill-down-list">
+                {viewLevel === 'years' && renderYears()}
+                {viewLevel === 'months' && selectedYear && renderMonths()}
+                {viewLevel === 'days' && selectedMonth && renderDays()}
+              </ul>
+              <Link to="/" className="button button-secondary back-button">
+                Back to Dashboard
+              </Link>
+            </aside>
+            <main className="right-column">
+              {selectedDate && (
+                <h3 className="right-column-header">
+                  Editorials for {`${selectedDate.day} ${MONTH_NAMES[selectedDate.month]} ${selectedDate.year}`}
+                </h3>
+              )}
+              {notes.length > 0 ? (
+                notes.map(note => <NoteListItem key={note._id} note={note} onToggleRead={toggleReadStatus} />)
+              ) : (
+                <div className="dashboard-view">
+                  <StatsDashboard stats={stats} />
+                  <NextToRead note={nextToRead} onUpdate={fetchDashboardData} />
+                </div>
+              )}
+            </main>
+          </>
+        )}
       </div>
     </div>
   );

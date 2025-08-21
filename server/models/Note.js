@@ -6,7 +6,10 @@ const noteSchema = new mongoose.Schema({
   title: { type: String, required: true },
   filePath: { type: String, required: true, unique: true },
   isRead: { type: Boolean, default: false },
-  frontmatter: { type: mongoose.Schema.Types.Mixed, default: {} }
+  frontmatter: { type: mongoose.Schema.Types.Mixed, default: {} },
+  rawContent: { type: String, default: '' },
+  analysisContent: { type: String, default: '' },
+  keywordsContent: { type: String, default: '' },
 }, {
   _id: false,
   collection: 'editorials'

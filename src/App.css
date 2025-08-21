@@ -536,3 +536,64 @@ html, body, #root {
   background-color: #f8f9fa;
   border-radius: 8px;
 }
+
+
+/* --- New Search UI Styles --- */
+
+.search-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pill-input-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: white;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  background-color: #007bff;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.pill-remove {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  font-size: 1.1rem;
+  padding: 0;
+}
+
+.pill-input {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  padding: 0.25rem;
+  font-size: 1.1rem;
+}
+
+.search-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.search-mode-selector label {
+  margin-right: 1rem;
+  font-weight: 500;
+}
+.right-column.full-width {
+  flex-basis: 100%; /* Make search results take full width */
+}
