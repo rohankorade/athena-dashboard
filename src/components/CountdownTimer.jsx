@@ -1,26 +1,12 @@
 // src/components/CountdownTimer.jsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
-function CountdownTimer({ startTime, timeLimit }) {
-  const calculateInitialRemainingTime = () => {
-    const now = new Date();
-    const start = new Date(startTime);
-    const elapsedSeconds = Math.floor((now - start) / 1000);
-    return Math.max(0, timeLimit - elapsedSeconds);
-  };
-
-  const [remainingTime, setRemainingTime] = useState(calculateInitialRemainingTime);
-
-  useEffect(() => {
-    const timerInterval = setInterval(() => {
-      setRemainingTime(prevTime => Math.max(0, prevTime - 1));
-    }, 1000);
-
-    return () => clearInterval(timerInterval);
-  }, []); // Empty dependency array ensures this runs only once
-
+function CountdownTimer({ remainingTime }) {
   const formatTime = (seconds) => {
-    if (seconds <= 0) return "00:00:00";
+    // Handle the initial null or undefined state gracefully
+    if (seconds === null || typeof seconds === 'undefined' || seconds < 0) {
+      return "00:00:00";
+    }
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
     const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
     const s = Math.floor(seconds % 60).toString().padStart(2, '0');

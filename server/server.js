@@ -14,6 +14,8 @@ const Test = require('./models/Test');
 const ExamSession = require('./models/ExamSession');
 const ExamAttempt = require('./models/ExamAttempt');
 
+const activeExamTimers = {};
+
 // --- Express App Setup ---
 const app = express();
 
@@ -461,9 +463,14 @@ io.on('connection', (socket) => {
   socket.on('start_exam', async (sessionId) => {
     try {
         const session = await ExamSession.findById(sessionId);
-        if (!session) { return; } // Handle case where session is not found
+        if (!session) { return; }
 
-        // 1. Get the questions to determine the count for the initial answers array
+        // Prevent starting a timer if one is already running for this session
+        if (activeExamTimers[sessionId]) {
+            console.log(`Timer already active for session: ${sessionId}`);
+            return;
+        }
+
         const mockDb = mongoose.connection.useDb('localMocks');
         const questions = await mockDb.db.collection(session.examCollectionName).find({}).toArray();
         const initialAnswers = questions.map(q => ({
@@ -471,8 +478,9 @@ io.on('connection', (socket) => {
             status: 'unseen'
         }));
 
-        // 2. Create an ExamAttempt for each participant
         const startTime = new Date();
+        const timeLimit = 7200; // Default time limit from schema
+
         const createdAttempts = await Promise.all(
             session.participants.map(participant => {
                 const newAttempt = new ExamAttempt({
@@ -480,17 +488,15 @@ io.on('connection', (socket) => {
                     username: participant.username,
                     examCollectionName: session.examCollectionName,
                     startTime: startTime,
+                    timeLimit: timeLimit,
                     answers: initialAnswers,
-                    // timeLimit can be customized later if needed
                 });
                 return newAttempt.save();
             })
         );
 
-        // 3. Map usernames to their new attempt IDs
         const attemptMap = Object.fromEntries(createdAttempts.map(a => [a.username, a._id]));
 
-        // 4. Emit a personalized 'exam_started' event to each socket in the lobby
         const socketsInRoom = await io.in(sessionId).fetchSockets();
         for (const sock of socketsInRoom) {
             const userAttemptId = attemptMap[sock.username];
@@ -499,9 +505,27 @@ io.on('connection', (socket) => {
             }
         }
 
+        // --- NEW SERVER-SIDE TIMER LOGIC ---
+        const timerId = setInterval(() => {
+            const now = new Date();
+            const elapsedSeconds = Math.floor((now - startTime) / 1000);
+            const remainingTime = Math.max(0, timeLimit - elapsedSeconds);
+
+            io.to(sessionId).emit('timer_tick', { remainingTime });
+
+            if (remainingTime <= 0) {
+                console.log(`Timer finished for session: ${sessionId}`);
+                clearInterval(timerId);
+                delete activeExamTimers[sessionId];
+                // Optionally, you could force-submit all exams here
+            }
+        }, 1000);
+
+        activeExamTimers[sessionId] = timerId;
+        console.log(`Timer started for session: ${sessionId}`);
+
     } catch (error) {
         console.error("Error starting exam:", error);
-        // Optionally, emit an error event back to the admin who tried to start it
     }
   });
 

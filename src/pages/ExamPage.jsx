@@ -17,6 +17,7 @@ function ExamPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [remainingTime, setRemainingTime] = useState(null);
 
   const handleAnswerUpdate = useCallback((status) => {
     const question = questions[currentQuestionIndex];
@@ -70,6 +71,7 @@ function ExamPage() {
         const attemptRes = await fetch(`${API_BASE}/api/exam-attempt/${attemptId}`);
         const attemptData = await attemptRes.json();
         setAttempt(attemptData);
+        setRemainingTime(attemptData.timeLimit); // Initialize timer from attempt data
         if (attemptData.examCollectionName) {
           const questionsRes = await fetch(`${API_BASE}/api/exam-questions/${attemptData.examCollectionName}`);
           const questionsData = await questionsRes.json();
@@ -83,11 +85,16 @@ function ExamPage() {
     };
     fetchData();
 
+    socket.on('timer_tick', ({ remainingTime: serverTime }) => {
+        setRemainingTime(serverTime);
+    });
+
     socket.on('exam_finished', ({ attemptId }) => {
         navigate(`/results/${attemptId}`);
     });
 
     return () => {
+        socket.off('timer_tick');
         socket.off('exam_finished');
     }
   }, [attemptId, navigate]);
@@ -112,7 +119,7 @@ function ExamPage() {
         <div>
           <h2>{attempt.examCollectionName}</h2>
         </div>
-        <CountdownTimer startTime={attempt.startTime} timeLimit={attempt.timeLimit} />
+        <CountdownTimer remainingTime={remainingTime} />
       </header>
       <div className="exam-main">
         <div className="exam-left-panel">
