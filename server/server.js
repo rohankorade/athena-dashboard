@@ -14,11 +14,12 @@ const Test = require('./models/Test');
 const ExamSession = require('./models/ExamSession');
 const ExamAttempt = require('./models/ExamAttempt');
 
+const activeExamTimers = {};
+
 // --- Express App Setup ---
 const app = express();
 
 // Create an HTTP server and attach Socket.IO to it
-// This allows us to use Socket.IO for real-time features in the future
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -124,52 +125,14 @@ app.post('/api/tests', async (req, res) => {
 app.get('/api/editorials/dates', async (req, res) => {
     try {
         const dateTree = await Note.aggregate([
-            // Stage 1: Filter documents to ensure the date field exists and is a valid date type.
-            // This is the crucial step that prevents server crashes.
-            { 
-                $match: { 
-                    "frontmatter.date": { 
-                        $exists: true, 
-                        $type: "date" 
-                    } 
-                } 
-            },
-            
-            // Stage 2: Group by the full date to get unique days.
-            { 
-                $group: {
-                    _id: {
-                        year: { $year: "$frontmatter.date" },
-                        month: { $month: "$frontmatter.date" },
-                        day: { $dayOfMonth: "$frontmatter.date" }
-                    }
-                }
-            },
-            
-            // Stage 3: Group the days by month.
-            { 
-                $group: {
-                    _id: { year: "$_id.year", month: "$_id.month" },
-                    days: { $push: "$_id.day" }
-                }
-            },
-            
-            // Stage 4: Group the months by year to create the final nested structure.
-            { 
-                $group: {
-                    _id: "$_id.year",
-                    months: { $push: { month: "$_id.month", days: "$days" } }
-                }
-            },
-
-            // Stage 5: Sort the final results by year in descending order.
-            { 
-                $sort: { _id: -1 } 
-            }
+            { $match: { "frontmatter.date": { $exists: true, $type: "date" } } },
+            { $group: { _id: { year: { $year: "$frontmatter.date" }, month: { $month: "$frontmatter.date" }, day: { $dayOfMonth: "$frontmatter.date" } } } },
+            { $group: { _id: { year: "$_id.year", month: "$_id.month" }, days: { $push: "$_id.day" } } },
+            { $group: { _id: "$_id.year", months: { $push: { month: "$_id.month", days: "$days" } } } },
+            { $sort: { _id: -1 } }
         ]);
         res.json(dateTree);
     } catch (error) {
-        // If anything still goes wrong, send a detailed error message.
         console.error("Error fetching date tree:", error);
         res.status(500).json({ message: 'Error fetching date tree', error });
     }
@@ -183,12 +146,7 @@ app.get('/api/editorials/by-date', async (req, res) => {
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + 1);
 
-        const notes = await Note.find({
-            "frontmatter.date": {
-                $gte: startDate,
-                $lt: endDate
-            }
-        });
+        const notes = await Note.find({ "frontmatter.date": { $gte: startDate, $lt: endDate } });
         res.json(notes);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching notes by date', error });
@@ -199,11 +157,7 @@ app.get('/api/editorials/by-date', async (req, res) => {
 app.patch('/api/editorials/:id/status', async (req, res) => {
     try {
         const { isRead } = req.body;
-        const updatedNote = await Note.findByIdAndUpdate(
-            req.params.id,
-            { isRead: isRead },
-            { new: true } // Return the updated document
-        );
+        const updatedNote = await Note.findByIdAndUpdate(req.params.id, { isRead: isRead }, { new: true });
         res.json(updatedNote);
     } catch (error) {
         res.status(400).json({ message: 'Error updating note status', error });
@@ -213,11 +167,8 @@ app.patch('/api/editorials/:id/status', async (req, res) => {
 // --- ADD THIS NEW DEBUG ROUTE ---
 app.get('/api/editorials/debug-one', async (req, res) => {
     try {
-        // Fetch just one document from the editorials collection
         const oneNote = await Note.findOne();
-        if (!oneNote) {
-            return res.status(404).json({ message: "No documents found in the editorials collection." });
-        }
+        if (!oneNote) { return res.status(404).json({ message: "No documents found in the editorials collection." }); }
         console.log("--- DEBUG: ONE NOTE ---");
         console.log(oneNote);
         console.log("-----------------------");
@@ -231,16 +182,9 @@ app.get('/api/editorials/debug-one', async (req, res) => {
 app.get('/api/editorials/debug-by-path', async (req, res) => {
     try {
         const filePath = req.query.path;
-        if (!filePath) {
-            return res.status(400).json({ message: "Please provide a 'path' query parameter." });
-        }
-        
-        // Find a note with a file path that CONTAINS the provided string
+        if (!filePath) { return res.status(400).json({ message: "Please provide a 'path' query parameter." }); }
         const note = await Note.findOne({ filePath: { $regex: filePath, $options: 'i' } });
-
-        if (!note) {
-            return res.status(404).json({ message: "Note not found containing that file path." });
-        }
+        if (!note) { return res.status(404).json({ message: "Note not found containing that file path." }); }
         res.json(note);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching debug note', error });
@@ -250,7 +194,6 @@ app.get('/api/editorials/debug-by-path', async (req, res) => {
 // GET all statistics for the editorials page
 app.get('/api/editorials/stats', async (req, res) => {
     try {
-        // 1. Days to CSP
         const cspExam = await Exam.findById('68a4bfe9adb3d434faf2c939');
         let daysToCSP = 'N/A';
         if (cspExam) {
@@ -260,27 +203,14 @@ app.get('/api/editorials/stats', async (req, res) => {
             const diffTime = examDate.getTime() - today.getTime();
             daysToCSP = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
-
-        // 2. Editorial Counts
         const total = await Note.countDocuments({});
         const read = await Note.countDocuments({ isRead: true });
         const unread = total - read;
-
-        // 3. Per Day Metric
         let perDay = 0;
-        // Calculate the metric only if there are days remaining
         if (unread > 0 && daysToCSP > 0) {
             perDay = (unread / daysToCSP).toFixed(1);
         }
-
-        // --- Final Response ---
-        res.json({
-            daysToCSP,
-            total,
-            read,
-            unread,
-            perDay
-        });
+        res.json({ daysToCSP, total, read, unread, perDay });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching stats', error });
     }
@@ -288,11 +218,8 @@ app.get('/api/editorials/stats', async (req, res) => {
 
 app.get('/api/editorials/next-to-read', async (req, res) => {
     try {
-        // 1. Filter for isRead: false
-        // 2. Sort by date ascending (oldest first)
-        // 3. Find just one
         const nextNote = await Note.findOne({ isRead: false }).sort({ "frontmatter.date": 1 });
-        res.json(nextNote); // Will return the note object or null if none are found
+        res.json(nextNote);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching next note to read', error });
     }
@@ -302,36 +229,19 @@ app.get('/api/editorials/next-to-read', async (req, res) => {
 app.get('/api/editorials/search', async (req, res) => {
     try {
         const { terms = '', mode = 'OR' } = req.query;
-        if (!terms.trim()) {
-            return res.json([]);
-        }
-
+        if (!terms.trim()) { return res.json([]); }
         const searchTerms = terms.split(',');
         const query = {};
-        
-        // Define the fields to search within
-        const fieldsToSearch = [
-            'title',
-            'frontmatter.subject',
-            'frontmatter.paper',
-            'frontmatter.theme',
-            'frontmatter.tags'
-        ];
-
+        const fieldsToSearch = ['title', 'frontmatter.subject', 'frontmatter.paper', 'frontmatter.theme', 'frontmatter.tags'];
         if (mode === 'AND') {
-            // AND logic: The document must match criteria for ALL search terms
             query.$and = searchTerms.map(term => {
-                const termRegex = new RegExp(term.trim(), 'i'); // Case-insensitive regex for the term
-                // For each term, it can exist in ANY of the fields
+                const termRegex = new RegExp(term.trim(), 'i');
                 return { $or: fieldsToSearch.map(field => ({ [field]: termRegex })) };
             });
         } else {
-            // OR logic: The document can match criteria for ANY search term
             const termRegexes = searchTerms.map(term => new RegExp(term.trim(), 'i'));
-            // Find documents where ANY field contains ANY of the regexes
             query.$or = fieldsToSearch.map(field => ({ [field]: { $in: termRegexes } }));
         }
-
         const results = await Note.find(query);
         res.json(results);
     } catch (error) {
@@ -343,23 +253,20 @@ app.get('/api/editorials/search', async (req, res) => {
 app.get('/api/editorials/:id', async (req, res) => {
     try {
         const note = await Note.findById(req.params.id);
-        if (!note) {
-            return res.status(404).json({ message: "Note not found" });
-        }
+        if (!note) { return res.status(404).json({ message: "Note not found" }); }
         res.json(note);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching note', error });
     }
 });
 
-
 // LOCAL MOCK APIs
 
-// GET all available question paper collections from the 'localMocks' db
+// GET all available question paper collections from the 'mockPapers' db
 app.get('/api/mocks/collections', async (req, res) => {
     try {
-        const mockDb = mongoose.connection.useDb('localMocks');
-        const collections = await mockDb.db.listCollections().toArray();
+        const questionDb = mongoose.connection.useDb('mockPapers');
+        const collections = await questionDb.db.listCollections().toArray();
         const collectionNames = collections.map(c => c.name);
         res.json(collectionNames);
     } catch (error) {
@@ -371,16 +278,9 @@ app.get('/api/mocks/collections', async (req, res) => {
 app.post('/api/mocks/create-session', async (req, res) => {
     try {
         const { collectionName } = req.body;
-        if (!collectionName) {
-            return res.status(400).json({ message: 'Collection name is required.' });
-        }
-        // Generate a simple, random 6-character code
+        if (!collectionName) { return res.status(400).json({ message: 'Collection name is required.' }); }
         const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-        const newSession = new MockExamSession({
-            sessionCode,
-            examCollectionName: collectionName,
-        });
+        const newSession = new MockExamSession({ sessionCode, examCollectionName: collectionName });
         await newSession.save();
         res.status(201).json(newSession);
     } catch (error) {
@@ -392,9 +292,7 @@ app.post('/api/mocks/create-session', async (req, res) => {
 app.get('/api/mocks/session-by-code/:code', async (req, res) => {
     try {
         const session = await MockExamSession.findOne({ sessionCode: req.params.code });
-        if (!session) {
-            return res.status(404).json({ message: "Session not found." });
-        }
+        if (!session) { return res.status(404).json({ message: "Session not found." }); }
         res.json(session);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching session', error });
@@ -405,10 +303,8 @@ app.get('/api/mocks/session-by-code/:code', async (req, res) => {
 app.get('/api/exam-questions/:collectionName', async (req, res) => {
     try {
         const { collectionName } = req.params;
-        const mockDb = mongoose.connection.useDb('localMocks');
-        // Mongoose doesn't have a direct way to select a collection by a variable name,
-        // so we access the native driver's `db` object.
-        const questions = await mockDb.db.collection(collectionName).find({}).toArray();
+        const questionDb = mongoose.connection.useDb('mockPapers');
+        const questions = await questionDb.db.collection(collectionName).find({}).toArray();
         res.json(questions);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching exam questions', error });
@@ -420,15 +316,12 @@ app.get('/api/exam-attempt/:attemptId', async (req, res) => {
     try {
         const { attemptId } = req.params;
         const attempt = await MockExamAttempt.findById(attemptId);
-        if (!attempt) {
-            return res.status(404).json({ message: "Exam attempt not found." });
-        }
+        if (!attempt) { return res.status(404).json({ message: "Exam attempt not found." }); }
         res.json(attempt);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching exam attempt', error });
     }
 });
-
 
 // --- REAL-TIME LOGIC with Socket.io ---
 io.on('connection', (socket) => {
@@ -436,19 +329,19 @@ io.on('connection', (socket) => {
 
   const broadcastLobbyUpdate = async (sessionId) => {
     const updatedSession = await MockExamSession.findById(sessionId);
-    io.to(sessionId).emit('lobby_update', updatedSession);
+    if (updatedSession) {
+        io.to(sessionId).emit('lobby_update', updatedSession);
+    }
   };
 
   socket.on('join_lobby', (sessionId) => {
     socket.join(sessionId);
     console.log(`User ${socket.id} joined lobby: ${sessionId}`);
-    broadcastLobbyUpdate(sessionId); // Send initial update to the new user
+    broadcastLobbyUpdate(sessionId);
   });
   
   socket.on('participant_join', async ({ sessionId, username }) => {
-    // Store the username on the socket object for future identification
     socket.username = username;
-
     await MockExamSession.findByIdAndUpdate(sessionId, {
         $push: { participants: { username, isReady: false } }
     });
@@ -466,18 +359,18 @@ io.on('connection', (socket) => {
   socket.on('start_exam', async (sessionId) => {
     try {
         const session = await MockExamSession.findById(sessionId);
-        if (!session) { return; } // Handle case where session is not found
+        if (!session || activeExamTimers[sessionId]) { return; }
 
-        // 1. Get the questions to determine the count for the initial answers array
-        const mockDb = mongoose.connection.useDb('localMocks');
-        const questions = await mockDb.db.collection(session.examCollectionName).find({}).toArray();
+        const questionDb = mongoose.connection.useDb('mockPapers');
+        const questions = await questionDb.db.collection(session.examCollectionName).find({}).toArray();
         const initialAnswers = questions.map(q => ({
             question_number: q.question_number,
             status: 'unseen'
         }));
 
-        // 2. Create an ExamAttempt for each participant
         const startTime = new Date();
+        const timeLimit = 7200;
+
         const createdAttempts = await Promise.all(
             session.participants.map(participant => {
                 const newAttempt = new MockExamAttempt({
@@ -485,17 +378,14 @@ io.on('connection', (socket) => {
                     username: participant.username,
                     examCollectionName: session.examCollectionName,
                     startTime: startTime,
+                    timeLimit: timeLimit,
                     answers: initialAnswers,
-                    // timeLimit can be customized later if needed
                 });
                 return newAttempt.save();
             })
         );
 
-        // 3. Map usernames to their new attempt IDs
         const attemptMap = Object.fromEntries(createdAttempts.map(a => [a.username, a._id]));
-
-        // 4. Emit a personalized 'exam_started' event to each socket in the lobby
         const socketsInRoom = await io.in(sessionId).fetchSockets();
         for (const sock of socketsInRoom) {
             const userAttemptId = attemptMap[sock.username];
@@ -504,9 +394,24 @@ io.on('connection', (socket) => {
             }
         }
 
+        const timerId = setInterval(() => {
+            const now = new Date();
+            const elapsedSeconds = Math.floor((now - startTime) / 1000);
+            const remainingTime = Math.max(0, timeLimit - elapsedSeconds);
+            io.to(sessionId).emit('timer_tick', { remainingTime });
+
+            if (remainingTime <= 0) {
+                console.log(`Timer finished for session: ${sessionId}`);
+                clearInterval(timerId);
+                delete activeExamTimers[sessionId];
+            }
+        }, 1000);
+
+        activeExamTimers[sessionId] = timerId;
+        console.log(`Timer started for session: ${sessionId}`);
+
     } catch (error) {
         console.error("Error starting exam:", error);
-        // Optionally, emit an error event back to the admin who tried to start it
     }
   });
 
@@ -514,12 +419,8 @@ io.on('connection', (socket) => {
     try {
         await MockExamAttempt.updateOne(
             { _id: attemptId, "answers.question_number": question_number },
-            { $set: {
-                "answers.$.selected_option_index": selected_option_index,
-                "answers.$.status": status
-            }}
+            { $set: { "answers.$.selected_option_index": selected_option_index, "answers.$.status": status }}
         );
-        // For now, we just save. We could optionally emit a confirmation back.
     } catch (error) {
         console.error("Error updating answer:", error);
     }
@@ -530,20 +431,18 @@ io.on('connection', (socket) => {
       const attempt = await MockExamAttempt.findById(attemptId);
       if (!attempt || attempt.isCompleted) { return; }
 
-      const mockDb = mongoose.connection.useDb('localMocks');
-      const questions = await mockDb.db.collection(attempt.examCollectionName).find({}).toArray();
+      const questionDb = mongoose.connection.useDb('mockPapers');
+      const questions = await questionDb.db.collection(attempt.examCollectionName).find({}).toArray();
 
       let score = 0;
-      // NOTE: This logic compares the 0-based index from the client with the 1-based string from the database.
       attempt.answers.forEach(answer => {
         if (answer.status === 'answered') {
           const question = questions.find(q => q.question_number === answer.question_number);
-          // Convert user's 0-based index to a 1-based string for comparison
           const userAnswerAsString = String(answer.selected_option_index + 1);
           if (question && userAnswerAsString === question.correct_answer) {
-            score += 2; // Correct answer
+            score += 2;
           } else {
-            score -= 0.66; // Incorrect answer penalty
+            score -= 0.66;
           }
         }
       });
@@ -553,7 +452,6 @@ io.on('connection', (socket) => {
       attempt.submittedAt = new Date();
       await attempt.save();
 
-      // Notify the client that the exam is finished and they can view results
       socket.emit('exam_finished', { attemptId: attempt._id });
 
     } catch (error) {
