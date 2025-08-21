@@ -116,31 +116,36 @@ function ExamPage() {
       </header>
       <div className="exam-main">
         <div className="exam-left-panel">
-          <div className="question-header">
-            <h2>Question {currentQuestion.question_number}</h2>
-          </div>
-          <div className="question-content">
-            <p>{currentQuestion.question}</p>
-          </div>
-          <div className="options-container">
-            {currentQuestion.options.map((option, index) => (
-              <div key={index} className="option">
-                <input
-                  type="radio"
-                  id={`option-${index}`}
-                  name={`question-${currentQuestion.question_number}`}
-                  value={index}
-                  checked={selectedOption === index}
-                  onChange={() => setSelectedOption(index)}
-                />
-                <label htmlFor={`option-${index}`}>{option}</label>
-              </div>
-            ))}
+          <div className="question-area">
+            <div className="question-header">
+              <h2>Question {currentQuestion.question_number}</h2>
+            </div>
+            <div className="question-content">
+              <p>{currentQuestion.question}</p>
+            </div>
+            <div className="options-container">
+              {currentQuestion.options.map((option, index) => (
+                <div key={index} className="option">
+                  <input
+                    type="radio"
+                    id={`option-${index}`}
+                    name={`question-${currentQuestion.question_number}`}
+                    value={index}
+                    checked={selectedOption === index}
+                    onChange={() => setSelectedOption(index)}
+                  />
+                  <label htmlFor={`option-${index}`}>{option}</label>
+                </div>
+              ))}
+            </div>
           </div>
           <div className="question-controls">
-            <button onClick={handleMarkForReview} className="button-secondary">Mark for Review & Next</button>
-            <button onClick={handleSkip} className="button-secondary">Skip & Next</button>
-            <button onClick={handleNext} className="button-primary">Save & Next</button>
+            <div className="question-controls-left">
+              <button onClick={handleMarkForReview} className="button-secondary">Mark for Review & Next</button>
+              <button onClick={handleSkip} className="button-secondary">Skip & Next</button>
+              <button onClick={handleNext} className="button-primary">Save & Next</button>
+            </div>
+            <button onClick={handleSubmitExam} className="button button-danger">Submit Test</button>
           </div>
         </div>
         <div className="exam-right-panel">
@@ -149,9 +154,6 @@ function ExamPage() {
             questions={questions}
             setCurrentQuestionIndex={setCurrentQuestionIndex}
           />
-          <div className="submit-test-container" style={{marginTop: '2rem', textAlign: 'center'}}>
-            <button onClick={handleSubmitExam} className="button button-danger">Submit Test</button>
-          </div>
         </div>
       </div>
     </div>

@@ -64,6 +64,7 @@ a.button:hover {
 .exam-main {
   display: flex;
   flex-grow: 1;
+  min-height: 0; /* Crucial for nested flex scrolling */
 }
 
 .exam-left-panel {
@@ -78,6 +79,14 @@ a.button:hover {
   padding: 1rem;
   border-left: 1px solid #ddd;
   background-color: #f8f9fa;
+  overflow-y: auto; /* Make the right panel scrollable */
+}
+
+.question-area {
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 1rem; /* Add some padding for the scrollbar */
 }
 
 .question-header {
@@ -85,7 +94,7 @@ a.button:hover {
 }
 
 .question-content {
-  flex-grow: 1;
+  /* flex-grow: 1; is now handled by question-area */
   margin-bottom: 1rem;
   white-space: pre-wrap; /* Preserve whitespace and newlines in question text */
 }
@@ -96,9 +105,15 @@ a.button:hover {
 
 .question-controls {
   display: flex;
-  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
   border-top: 1px solid #eee;
   padding-top: 1rem;
+}
+
+.question-controls-left {
+  display: flex;
+  gap: 1rem;
 }
 
 /* Question Palette */
