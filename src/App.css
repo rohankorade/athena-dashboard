@@ -1111,6 +1111,54 @@ a.button:hover {
   font-weight: 400;
   font-size: 1.2rem;
   line-height: 1.6;
+  margin: 0;
+}
+
+.result-item {
+  background-color: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: box-shadow 0.2s;
+}
+
+.result-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.result-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.result-item-body p {
+  margin: 0.5rem 0;
+  color: #495057;
+}
+
+.result-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  margin-left: 1rem;
+}
+
+.result-badge.correct {
+  background-color: #2ecc71; /* Flat Green */
+}
+
+.result-badge.incorrect {
+  background-color: #e74c3c; /* Flat Red */
+}
+
+.result-badge.unanswered {
+  background-color: #95a5a6; /* Flat Gray */
 }
 
 
