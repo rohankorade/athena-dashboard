@@ -19,6 +19,7 @@ import AnswerWriting from './pages/AnswerWriting.jsx';
 import NoteView from './pages/NoteView.jsx';
 
 //Utilities
+import ParticipantLayout from './components/ParticipantLayout.jsx';
 import Utilities from './pages/Utilities.jsx';
 import PomodoroTimer from './pages/utilities/PomodoroTimer.jsx';
 import AdminSetup from './pages/utilities/AdminSetup.jsx';
@@ -31,9 +32,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <Routes>
         {/* --- Public, Self-Contained Routes --- */}
-        {/* This route is for participants to join a lobby directly without seeing the rest of the app */}
-        <Route path="/join" element={<JoinLobby />} />
-        <Route path="/local-mock/lobby/:sessionId" element={<LobbyView />} />
+        {/* These routes are wrapped in a minimal layout to provide a consistent full-screen background */}
+        <Route element={<ParticipantLayout />}>
+          <Route path="/join" element={<JoinLobby />} />
+          <Route path="/local-mock/lobby/:sessionId" element={<LobbyView />} />
+        </Route>
 
 
         {/* --- Main Application Routes (with Layout) --- */}
