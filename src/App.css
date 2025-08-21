@@ -44,6 +44,114 @@ a.button:hover {
 }
 
 /* 2. Add these rules to style the scrollbar itself */
+
+/* Exam Page Layout */
+.exam-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.exam-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+}
+
+.exam-main {
+  display: flex;
+  flex-grow: 1;
+}
+
+.exam-left-panel {
+  flex-grow: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.exam-right-panel {
+  width: 250px;
+  padding: 1rem;
+  border-left: 1px solid #ddd;
+  background-color: #f8f9fa;
+}
+
+.question-header {
+  margin-bottom: 1rem;
+}
+
+.question-content {
+  flex-grow: 1;
+  margin-bottom: 1rem;
+  white-space: pre-wrap; /* Preserve whitespace and newlines in question text */
+}
+
+.options-container .option {
+  margin-bottom: 0.75rem;
+}
+
+.question-controls {
+  display: flex;
+  gap: 1rem;
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
+}
+
+/* Question Palette */
+.palette-container {
+  text-align: center;
+}
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 8px;
+}
+
+.palette-button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  background-color: #fff;
+  font-weight: bold;
+}
+
+.palette-button.unseen {
+  background-color: #f0f0f0;
+}
+.palette-button.unanswered {
+  background-color: #ef5350; /* Red */
+  color: white;
+}
+.palette-button.answered {
+  background-color: #66bb6a; /* Green */
+  color: white;
+}
+.palette-button.marked_for_review {
+  background-color: #7e57c2; /* Purple */
+  color: white;
+}
+
+/* Countdown Timer */
+.countdown-timer {
+  text-align: right;
+}
+.countdown-timer h4 {
+  margin: 0 0 0.25rem 0;
+}
+.countdown-timer p {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+.countdown-timer .time-up {
+    color: #ef5350;
+}
 ::-webkit-scrollbar {
   width: 8px;
 }

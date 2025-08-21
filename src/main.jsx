@@ -25,6 +25,8 @@ import PomodoroTimer from './pages/utilities/PomodoroTimer.jsx';
 import AdminSetup from './pages/utilities/AdminSetup.jsx';
 import JoinLobby from './pages/utilities/JoinLobby.jsx';
 import LobbyView from './pages/utilities/LobbyView.jsx';
+import ExamPage from './pages/ExamPage.jsx';
+import ResultsPage from './pages/ResultsPage.jsx';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -36,6 +38,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route element={<ParticipantLayout />}>
           <Route path="/join" element={<JoinLobby />} />
           <Route path="/local-mock/lobby/:sessionId" element={<LobbyView />} />
+          <Route path="/exam/:attemptId" element={<ExamPage />} />
+          <Route path="/results/:attemptId" element={<ResultsPage />} />
         </Route>
 
 
