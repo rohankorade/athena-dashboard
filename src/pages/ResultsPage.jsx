@@ -55,30 +55,42 @@ function ResultsPage() {
         }
     });
 
+    // New calculations for time taken and total score
+    const timeTaken = attempt.submittedAt && attempt.startTime ? new Date(attempt.submittedAt) - new Date(attempt.startTime) : 0;
+    const formatTime = (ms) => {
+        const seconds = Math.floor(ms / 1000) % 60;
+        const minutes = Math.floor(ms / (1000 * 60)) % 60;
+        const hours = Math.floor(ms / (1000 * 60 * 60));
+        return `${hours > 0 ? `${hours}h ` : ''}${minutes > 0 ? `${minutes}m ` : ''}${seconds}s`;
+    };
+
+    const totalScore = (correctCount * 2) - (incorrectCount * 0.5);
+
     return (
         <div className="page-container" style={{padding: '2rem'}}>
             <div className="results-header">
                 <div className="results-header-info">
                     <h1>{attempt.examCollectionName}</h1>
                     <p>Submitted by: {attempt.username}</p>
+                    <p>Time Taken: {formatTime(timeTaken)}</p>
                 </div>
                 <div className="results-header-stats">
                     <div className="stats-grid">
                         <div className="stat-item">
-                            <span className="stat-label">Total Score</span>
-                            <span className="stat-value">{attempt.finalScore}</span>
-                        </div>
-                        <div className="stat-item">
                             <span className="stat-label">Correct</span>
-                            <span className="stat-value" style={{ color: 'var(--success-green, #28a745)' }}>{correctCount}</span>
+                            <span className="stat-value" style={{ color: 'green' }}>{correctCount}</span>
                         </div>
                         <div className="stat-item">
                             <span className="stat-label">Incorrect</span>
-                            <span className="stat-value" style={{ color: 'var(--danger-red, #dc3545)' }}>{incorrectCount}</span>
+                            <span className="stat-value" style={{ color: 'red' }}>{incorrectCount}</span>
                         </div>
                         <div className="stat-item">
                             <span className="stat-label">Unanswered</span>
-                            <span className="stat-value">{unansweredCount}</span>
+                            <span className="stat-value" style={{ color: 'gray' }}>{unansweredCount}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Total Score</span>
+                            <span className="stat-value" style={{ color: 'blue' }}>{totalScore.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
@@ -87,20 +99,30 @@ function ResultsPage() {
             <div className="detailed-results">
                 {questions.map(question => {
                     const userAnswer = attempt.answers.find(a => a.question_number === question.question_number);
-                    // Corrected logic for checking the answer
                     const isCorrect = userAnswer?.status === 'answered' && String(userAnswer.selected_option_index + 1) === question.correct_answer;
                     const resultClass = userAnswer?.status === 'answered' ? (isCorrect ? 'correct-answer' : 'incorrect-answer') : 'unanswered-question';
-                    // Corrected logic for displaying the correct answer index
                     const correctAnswerIndex = Number(question.correct_answer) - 1;
 
+                    const getBadgeInfo = (status) => {
+                        if (status === 'correct-answer') return { text: 'Correct', className: 'correct' };
+                        if (status === 'incorrect-answer') return { text: 'Incorrect', className: 'incorrect' };
+                        return { text: 'Unanswered', className: 'unanswered' };
+                    };
+
+                    const badgeInfo = getBadgeInfo(resultClass);
+
                     return (
-                        <div key={question.question_number} className={`result-item ${resultClass}`} style={{marginBottom: '1.5rem', border: '1px solid #ddd', padding: '1rem'}}>
-                            <h4 className="result-question-text">Q{question.question_number}: {question.question}</h4>
-                            <p><strong>Your Answer:</strong> {userAnswer?.selected_option_index !== null ? question.options[userAnswer.selected_option_index] : 'Not Answered'}</p>
-                            {userAnswer?.status === 'answered' && !isCorrect && (
-                                <p><strong>Correct Answer:</strong> {question.options[correctAnswerIndex]}</p>
-                            )}
-                            {/* You could add an 'explanation' field to your question model and display it here */}
+                        <div key={question.question_number} className={`result-item ${resultClass}`}>
+                            <div className="result-item-header">
+                                <h4 className="result-question-text">Q{question.question_number}: {question.question}</h4>
+                                <span className={`result-badge ${badgeInfo.className}`}>{badgeInfo.text}</span>
+                            </div>
+                            <div className="result-item-body">
+                                <p><strong>Your Answer:</strong> {userAnswer?.selected_option_index !== null && userAnswer.selected_option_index < question.options.length ? question.options[userAnswer.selected_option_index] : 'Not Answered'}</p>
+                                {userAnswer?.status === 'answered' && !isCorrect && (
+                                    <p><strong>Correct Answer:</strong> {question.options[correctAnswerIndex]}</p>
+                                )}
+                            </div>
                         </div>
                     );
                 })}
