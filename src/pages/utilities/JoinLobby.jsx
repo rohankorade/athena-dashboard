@@ -6,7 +6,7 @@ function JoinLobby() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = `http://${window.location.hostname}:5000`;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

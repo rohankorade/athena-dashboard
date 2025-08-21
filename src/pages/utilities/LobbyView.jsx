@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
-const API_BASE = import.meta.env.VITE_API_URL;
-const socket = io(API_BASE);
+const API_BASE = `http://${window.location.hostname}:5000`;
 
 function LobbyView() {
   const { sessionId } = useParams();
@@ -13,10 +12,12 @@ function LobbyView() {
   const [isRegistered, setIsRegistered] = useState(false);
 
   useEffect(() => {
+    // Initialize socket connection
+    const socket = io(API_BASE);
+
     // Check if the user has a saved username and session ID
     const savedUsername = sessionStorage.getItem('exam_username');
     const savedSessionId = sessionStorage.getItem('exam_sessionId');
-
     if (savedUsername && savedSessionId === sessionId) {
       // If we're in the same lobby as before, restore the user's state
       setUsername(savedUsername);
@@ -34,6 +35,7 @@ function LobbyView() {
     // Clean up on component unmount
     return () => {
       socket.off('lobby_update');
+      socket.disconnect();
     };
   }, [sessionId]);
 
@@ -42,7 +44,9 @@ function LobbyView() {
     const trimmedUsername = username.trim(); // Create the variable here
     if (!trimmedUsername) return;
 
-    socket.emit('participant_join', { sessionId, username: username.trim() });
+    // Emit registration event to the server
+    const socket = io(API_BASE);
+    socket.emit('participant_join', { sessionId, username: trimmedUsername });
     setIsRegistered(true);
 
     // Save the username and session ID to sessionStorage
@@ -52,6 +56,7 @@ function LobbyView() {
   
   const handleReadyToggle = (e) => {
     const isReady = e.target.checked;
+    const socket = io(API_BASE);
     socket.emit('participant_ready', { sessionId, username, isReady });
   };
   
