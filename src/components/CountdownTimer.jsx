@@ -2,22 +2,22 @@
 import React, { useState, useEffect } from 'react';
 
 function CountdownTimer({ startTime, timeLimit }) {
-  const calculateRemainingTime = () => {
+  const calculateInitialRemainingTime = () => {
     const now = new Date();
     const start = new Date(startTime);
     const elapsedSeconds = Math.floor((now - start) / 1000);
     return Math.max(0, timeLimit - elapsedSeconds);
   };
 
-  const [remainingTime, setRemainingTime] = useState(calculateRemainingTime);
+  const [remainingTime, setRemainingTime] = useState(calculateInitialRemainingTime);
 
   useEffect(() => {
     const timerInterval = setInterval(() => {
-      setRemainingTime(calculateRemainingTime());
+      setRemainingTime(prevTime => Math.max(0, prevTime - 1));
     }, 1000);
 
     return () => clearInterval(timerInterval);
-  }, [startTime, timeLimit]);
+  }, []); // Empty dependency array ensures this runs only once
 
   const formatTime = (seconds) => {
     if (seconds <= 0) return "00:00:00";
