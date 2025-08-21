@@ -12,6 +12,7 @@ const Exam = require('./models/Exam'); // Assuming Exam.js is now in models
 const TestSeries = require('./models/TestSeries');
 const Test = require('./models/Test');
 const ExamSession = require('./models/ExamSession');
+const ExamAttempt = require('./models/ExamAttempt');
 
 // --- Express App Setup ---
 const app = express();
@@ -395,6 +396,34 @@ app.get('/api/mocks/session-by-code/:code', async (req, res) => {
     }
 });
 
+// GET all questions for a given exam collection
+app.get('/api/exam-questions/:collectionName', async (req, res) => {
+    try {
+        const { collectionName } = req.params;
+        const mockDb = mongoose.connection.useDb('localMocks');
+        // Mongoose doesn't have a direct way to select a collection by a variable name,
+        // so we access the native driver's `db` object.
+        const questions = await mockDb.db.collection(collectionName).find({}).toArray();
+        res.json(questions);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching exam questions', error });
+    }
+});
+
+// GET a specific exam attempt by its ID
+app.get('/api/exam-attempt/:attemptId', async (req, res) => {
+    try {
+        const { attemptId } = req.params;
+        const attempt = await ExamAttempt.findById(attemptId);
+        if (!attempt) {
+            return res.status(404).json({ message: "Exam attempt not found." });
+        }
+        res.json(attempt);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching exam attempt', error });
+    }
+});
+
 
 // --- REAL-TIME LOGIC with Socket.io ---
 io.on('connection', (socket) => {
@@ -412,6 +441,9 @@ io.on('connection', (socket) => {
   });
   
   socket.on('participant_join', async ({ sessionId, username }) => {
+    // Store the username on the socket object for future identification
+    socket.username = username;
+
     await ExamSession.findByIdAndUpdate(sessionId, {
         $push: { participants: { username, isReady: false } }
     });
@@ -424,6 +456,104 @@ io.on('connection', (socket) => {
         { $set: { "participants.$.isReady": isReady } }
     );
     broadcastLobbyUpdate(sessionId);
+  });
+
+  socket.on('start_exam', async (sessionId) => {
+    try {
+        const session = await ExamSession.findById(sessionId);
+        if (!session) { return; } // Handle case where session is not found
+
+        // 1. Get the questions to determine the count for the initial answers array
+        const mockDb = mongoose.connection.useDb('localMocks');
+        const questions = await mockDb.db.collection(session.examCollectionName).find({}).toArray();
+        const initialAnswers = questions.map(q => ({
+            question_number: q.question_number,
+            status: 'unseen'
+        }));
+
+        // 2. Create an ExamAttempt for each participant
+        const startTime = new Date();
+        const createdAttempts = await Promise.all(
+            session.participants.map(participant => {
+                const newAttempt = new ExamAttempt({
+                    examSession: session._id,
+                    username: participant.username,
+                    examCollectionName: session.examCollectionName,
+                    startTime: startTime,
+                    answers: initialAnswers,
+                    // timeLimit can be customized later if needed
+                });
+                return newAttempt.save();
+            })
+        );
+
+        // 3. Map usernames to their new attempt IDs
+        const attemptMap = Object.fromEntries(createdAttempts.map(a => [a.username, a._id]));
+
+        // 4. Emit a personalized 'exam_started' event to each socket in the lobby
+        const socketsInRoom = await io.in(sessionId).fetchSockets();
+        for (const sock of socketsInRoom) {
+            const userAttemptId = attemptMap[sock.username];
+            if (userAttemptId) {
+                sock.emit('exam_started', { attemptId: userAttemptId });
+            }
+        }
+
+    } catch (error) {
+        console.error("Error starting exam:", error);
+        // Optionally, emit an error event back to the admin who tried to start it
+    }
+  });
+
+  socket.on('update_answer', async ({ attemptId, question_number, selected_option_index, status }) => {
+    try {
+        await ExamAttempt.updateOne(
+            { _id: attemptId, "answers.question_number": question_number },
+            { $set: {
+                "answers.$.selected_option_index": selected_option_index,
+                "answers.$.status": status
+            }}
+        );
+        // For now, we just save. We could optionally emit a confirmation back.
+    } catch (error) {
+        console.error("Error updating answer:", error);
+    }
+  });
+
+  socket.on('submit_exam', async ({ attemptId }) => {
+    try {
+      const attempt = await ExamAttempt.findById(attemptId);
+      if (!attempt || attempt.isCompleted) { return; }
+
+      const mockDb = mongoose.connection.useDb('localMocks');
+      const questions = await mockDb.db.collection(attempt.examCollectionName).find({}).toArray();
+
+      let score = 0;
+      // NOTE: This logic compares the 0-based index from the client with the 1-based string from the database.
+      attempt.answers.forEach(answer => {
+        if (answer.status === 'answered') {
+          const question = questions.find(q => q.question_number === answer.question_number);
+          // Convert user's 0-based index to a 1-based string for comparison
+          const userAnswerAsString = String(answer.selected_option_index + 1);
+          if (question && userAnswerAsString === question.correct_answer) {
+            score += 2; // Correct answer
+          } else {
+            score -= 0.66; // Incorrect answer penalty
+          }
+        }
+      });
+
+      attempt.finalScore = score.toFixed(2);
+      attempt.isCompleted = true;
+      attempt.submittedAt = new Date();
+      await attempt.save();
+
+      // Notify the client that the exam is finished and they can view results
+      socket.emit('exam_finished', { attemptId: attempt._id });
+
+    } catch (error) {
+        console.error("Error submitting exam:", error);
+    }
   });
 
   socket.on('disconnect', () => {
