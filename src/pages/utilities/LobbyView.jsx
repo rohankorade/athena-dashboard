@@ -1,15 +1,19 @@
 // src/pages/utilities/LobbyView.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
 const API_BASE = `http://${window.location.hostname}:5000`;
 
 function LobbyView() {
   const { sessionId } = useParams();
+  const location = useLocation(); // Get location to determine view type
   const [session, setSession] = useState(null);
   const [username, setUsername] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
+
+  // Determine if this is the admin view based on the URL path
+  const isAdminView = location.pathname.startsWith('/utilities');
 
   useEffect(() => {
     // Initialize socket connection
@@ -101,12 +105,14 @@ function LobbyView() {
             </label>
           </div>
           
-          <div className="admin-controls">
-            <button className="button button-primary" disabled={!allReady}>
-              Start Exam for All
-            </button>
-            {!allReady && <p>The exam can start once all participants are ready.</p>}
-          </div>
+          {isAdminView && (
+            <div className="admin-controls">
+              <button className="button button-primary" disabled={!allReady}>
+                Start Exam for All
+              </button>
+              {!allReady && <p>The exam can start once all participants are ready.</p>}
+            </div>
+          )}
         </div>
       )}
     </div>

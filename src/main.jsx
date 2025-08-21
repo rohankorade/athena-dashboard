@@ -29,7 +29,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
-        {/* App component is the parent layout */}
+        {/* --- Public, Self-Contained Routes --- */}
+        {/* This route is for participants to join a lobby directly without seeing the rest of the app */}
+        <Route path="/join" element={<JoinLobby />} />
+        <Route path="/local-mock/lobby/:sessionId" element={<LobbyView />} />
+
+
+        {/* --- Main Application Routes (with Layout) --- */}
+        {/* App component is the parent layout for all nested routes */}
         <Route path="/" element={<App />}>
           {/* Child pages that will render inside App's <Outlet> */}
           <Route index element={<DashboardHome />} />
@@ -40,11 +47,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="sociology" element={<Sociology />} />
           <Route path="answer-writing" element={<AnswerWriting />} />
 
-          // Nested route for utilities
+          {/* Nested routes for utilities, visible within the main app layout */}
           <Route path="utilities" element={<Utilities />} />
           <Route path="utilities/pomodoro-timer" element={<PomodoroTimer />} />
           <Route path="utilities/local-mock/setup" element={<AdminSetup />} />
           <Route path="utilities/local-mock/join" element={<JoinLobby />} />
+          {/* This route is for the admin to view the lobby within the dashboard */}
           <Route path="utilities/local-mock/lobby/:sessionId" element={<LobbyView />} />
         </Route>
       </Routes>
