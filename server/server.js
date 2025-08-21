@@ -277,6 +277,47 @@ app.get('/api/editorials/next-to-read', async (req, res) => {
     }
 });
 
+// GET endpoint for advanced, unified search
+app.get('/api/editorials/search', async (req, res) => {
+    try {
+        const { terms = '', mode = 'OR' } = req.query;
+        if (!terms.trim()) {
+            return res.json([]);
+        }
+
+        const searchTerms = terms.split(',');
+        const query = {};
+        
+        // Define the fields to search within
+        const fieldsToSearch = [
+            'title',
+            'frontmatter.subject',
+            'frontmatter.paper',
+            'frontmatter.theme',
+            'frontmatter.tags'
+        ];
+
+        if (mode === 'AND') {
+            // AND logic: The document must match criteria for ALL search terms
+            query.$and = searchTerms.map(term => {
+                const termRegex = new RegExp(term.trim(), 'i'); // Case-insensitive regex for the term
+                // For each term, it can exist in ANY of the fields
+                return { $or: fieldsToSearch.map(field => ({ [field]: termRegex })) };
+            });
+        } else {
+            // OR logic: The document can match criteria for ANY search term
+            const termRegexes = searchTerms.map(term => new RegExp(term.trim(), 'i'));
+            // Find documents where ANY field contains ANY of the regexes
+            query.$or = fieldsToSearch.map(field => ({ [field]: { $in: termRegexes } }));
+        }
+
+        const results = await Note.find(query);
+        res.json(results);
+    } catch (error) {
+        res.status(500).json({ message: 'Error during search', error });
+    }
+});
+
 // Start the Server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

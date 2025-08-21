@@ -99,7 +99,7 @@ function Editorials() {
       onClick={() => handleDaySelect(day)}
       className={selectedDate?.day === day ? 'active-day' : ''}
     >
-      {day} 
+      {day}
     </li>
   ));
 
