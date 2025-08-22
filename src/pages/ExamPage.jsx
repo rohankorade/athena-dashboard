@@ -1,7 +1,7 @@
 // src/pages/ExamPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { socket } from '../socket'; // Use the single, shared socket instance
+import { useSocket } from '../contexts/SocketContext'; // Use the new useSocket hook
 
 import QuestionPalette from '../components/QuestionPalette';
 import CountdownTimer from '../components/CountdownTimer';
@@ -9,6 +9,7 @@ import CountdownTimer from '../components/CountdownTimer';
 function ExamPage() {
   const { attemptId } = useParams();
   const navigate = useNavigate();
+  const socket = useSocket(); // Get the socket instance from the context
   const [attempt, setAttempt] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -31,7 +32,7 @@ function ExamPage() {
 
   const handleAnswerUpdate = useCallback((status) => {
     const question = questions[currentQuestionIndex];
-    if (!question) return;
+    if (!question || !socket) return; // Add a guard for the socket
     socket.emit('update_answer', {
       attemptId,
       question_number: question.question_number,
@@ -45,7 +46,7 @@ function ExamPage() {
       answerToUpdate.selected_option_index = selectedOption;
       setAttempt(prev => ({ ...prev, answers: updatedAnswers }));
     }
-  }, [attemptId, currentQuestionIndex, questions, selectedOption, attempt]);
+  }, [socket, attemptId, currentQuestionIndex, questions, selectedOption, attempt]);
 
   const moveToNextQuestion = useCallback(() => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -69,12 +70,14 @@ function ExamPage() {
   };
 
   const handleSubmitExam = () => {
-    if (window.confirm("Are you sure you want to submit the test?")) {
+    if (window.confirm("Are you sure you want to submit the test?") && socket) {
         socket.emit('submit_exam', { attemptId });
     }
   };
 
   useEffect(() => {
+    if (!socket) return; // Don't do anything if the socket is not yet connected
+
     const API_BASE = `http://${window.location.hostname}:5000`; // API_BASE is only needed for fetch
     const fetchData = async () => {
       try {
@@ -101,19 +104,22 @@ function ExamPage() {
     };
     fetchData();
 
-    socket.on('timer_tick', ({ remainingTime: serverTime }) => {
+    const handleTimerTick = ({ remainingTime: serverTime }) => {
         setRemainingTime(serverTime);
-    });
+    };
 
-    socket.on('exam_finished', ({ attemptId }) => {
-        navigate(`/results/${attemptId}`);
-    });
+    const handleExamFinished = ({ attemptId: finishedAttemptId }) => {
+        navigate(`/results/${finishedAttemptId}`);
+    };
+
+    socket.on('timer_tick', handleTimerTick);
+    socket.on('exam_finished', handleExamFinished);
 
     return () => {
-        socket.off('timer_tick');
-        socket.off('exam_finished');
+        socket.off('timer_tick', handleTimerTick);
+        socket.off('exam_finished', handleExamFinished);
     }
-  }, [attemptId, navigate]);
+  }, [socket, attemptId, navigate]);
 
   useEffect(() => {
     if (attempt && questions.length > 0) {

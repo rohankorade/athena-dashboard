@@ -1,16 +1,18 @@
 // src/pages/utilities/RealTimeAnalysisPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { socket } from '../../socket'; // We are now using the single, shared socket instance
+import { useSocket } from '../../contexts/SocketContext';
 
 
 function RealTimeAnalysisPage() {
   const { attemptId } = useParams();
+  const socket = useSocket();
   const [attempt, setAttempt] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const API_BASE = `http://${window.location.hostname}:5000`;
     const fetchData = async () => {
       try {
         setIsLoading(true);
@@ -35,20 +37,22 @@ function RealTimeAnalysisPage() {
   }, [attemptId]);
 
   useEffect(() => {
+    if (!socket) return;
     // Join the room to receive real-time updates for this attempt
     socket.emit('join_attempt_room', attemptId);
 
     // Listen for updates
-    socket.on('attempt_update', (updatedAttempt) => {
+    const handleAttemptUpdate = (updatedAttempt) => {
       setAttempt(updatedAttempt);
-    });
+    };
+    socket.on('attempt_update', handleAttemptUpdate);
 
     // Clean up on component unmount
     return () => {
-      socket.off('attempt_update');
+      socket.off('attempt_update', handleAttemptUpdate);
       // Should also add a 'leave_attempt_room' event on the server for cleanup
     };
-  }, [attemptId]);
+  }, [socket, attemptId]);
 
   const stats = useMemo(() => {
     if (!attempt) return { answered: 0, unanswered: 0, marked: 0, unseen: 0, score: 0 };

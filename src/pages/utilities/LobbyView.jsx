@@ -1,7 +1,7 @@
 // src/pages/utilities/LobbyView.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { socket } from '../../socket';
+import { useSocket } from '../../contexts/SocketContext';
 
 const ADMIN_USERNAME = "Rohan";
 
@@ -9,6 +9,7 @@ function LobbyView() {
   const { sessionId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const socket = useSocket();
   const [session, setSession] = useState(null);
   const [username, setUsername] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
@@ -16,6 +17,7 @@ function LobbyView() {
   const isAdminView = location.pathname.startsWith('/utilities');
 
   useEffect(() => {
+    if (!socket) return;
     // For regular participants, check if they are already registered
     if (!isAdminView) {
       const savedUsername = sessionStorage.getItem('exam_username');
@@ -49,12 +51,12 @@ function LobbyView() {
       socket.off('lobby_update', handleLobbyUpdate);
       socket.off('exam_started_for_all', handleExamStartedForAll);
     };
-  }, [sessionId, isAdminView, username, navigate]);
+  }, [socket, sessionId, isAdminView, username, navigate]);
 
   const handleRegister = (e) => {
     e.preventDefault();
     const trimmedUsername = username.trim();
-    if (!trimmedUsername) return;
+    if (!trimmedUsername || !socket) return;
 
     socket.emit('participant_join', { sessionId, username: trimmedUsername });
     setIsRegistered(true);
@@ -63,15 +65,18 @@ function LobbyView() {
   };
   
   const handleReadyToggle = (e) => {
+    if (!socket) return;
     const isReady = e.target.checked;
     socket.emit('participant_ready', { sessionId, username, isReady });
   };
 
   const handleStartExam = () => {
+    if (!socket) return;
     socket.emit('start_exam', sessionId);
   };
   
   const handleAdminParticipation = () => {
+    if (!socket) return;
     const isAdminParticipating = session?.participants.some(p => p.username === ADMIN_USERNAME);
     if (isAdminParticipating) {
       socket.emit('admin_leave_session', { sessionId, username: ADMIN_USERNAME });
