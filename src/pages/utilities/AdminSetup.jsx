@@ -136,7 +136,7 @@ function AdminSetup() {
 
         {/* Action Button */}
         <div className="setup-actions">
-            <button onClick={handleCreateLobby} className="button-create-lobby" disabled={isLoading || totalQuestions === 0}>
+            <button onClick={handleCreateLobby} className="button-action-primary" disabled={isLoading || totalQuestions === 0}>
             Create Lobby
             </button>
         </div>

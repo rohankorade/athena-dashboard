@@ -5,7 +5,6 @@ import { io } from 'socket.io-client';
 
 const API_BASE = `http://${window.location.hostname}:5000`;
 
-// Create the socket connection once and reuse it across the component's lifecycle.
 const socket = io(API_BASE);
 
 function LobbyView() {
@@ -75,38 +74,58 @@ function LobbyView() {
       </div>
 
       {!isRegistered ? (
-        <form onSubmit={handleRegister} className="setup-form">
-          <label htmlFor="username">Enter Your Name:</label>
-          <input id="username" type="text" value={username} onChange={e => setUsername(e.target.value)} required />
-          <button type="submit" className="button button-primary">Register</button>
-        </form>
-      ) : (
-        <div className="lobby-content">
-          <h3>Participants</h3>
-          <ul className="participant-list">
-            {session.participants.map(p => (
-              <li key={p.username} className={p.isReady ? 'ready' : ''}>
-                {p.username}
-                <span>{p.isReady ? '✅ Ready' : '⏳ Not Ready'}</span>
-              </li>
-            ))}
-          </ul>
-          
-          <div className="readiness-check">
-            <label>
-              <input type="checkbox" checked={currentUser?.isReady || false} onChange={handleReadyToggle} />
-              I am ready
-            </label>
+        <div className="centered-card-container">
+          <div className="setup-card">
+            <h2>Join the Session</h2>
+            <form onSubmit={handleRegister}>
+              <div className="form-group-vertical">
+                <label htmlFor="username">Enter Your Name</label>
+                <input 
+                  id="username" 
+                  type="text" 
+                  value={username} 
+                  onChange={e => setUsername(e.target.value)} 
+                  required 
+                  autoFocus
+                  placeholder="Your Name"
+                />
+              </div>
+              <div className="setup-actions">
+                <button type="submit" className="button-action-primary">Register</button>
+              </div>
+            </form>
           </div>
-          
-          {isAdminView && (
-            <div className="admin-controls">
-              <button className="button button-primary" onClick={handleStartExam} disabled={!allReady}>
-                Start Exam for All
-              </button>
-              {!allReady && <p>The exam can start once all participants are ready.</p>}
+        </div>
+      ) : (
+        <div className="centered-card-container">
+            <div className="setup-card">
+                <h2>Participants ({session.participants.length})</h2>
+                <ul className="participant-list">
+                {session.participants.map(p => (
+                    <li key={p.username} className={p.isReady ? 'ready' : ''}>
+                    <span>{p.username}</span>
+                    <span>{p.isReady ? '✅ Ready' : '⏳ Not Ready'}</span>
+                    </li>
+                ))}
+                </ul>
+                <div className="lobby-actions">
+                    <div className="readiness-check">
+                        <label>
+                        <input type="checkbox" checked={currentUser?.isReady || false} onChange={handleReadyToggle} />
+                        I am ready
+                        </label>
+                    </div>
+                    
+                    {isAdminView && (
+                        <div className="admin-controls">
+                        <button className="button-create-lobby" onClick={handleStartExam} disabled={!allReady}>
+                            Start Exam for All
+                        </button>
+                        {!allReady && <p className="all-ready-notice">The exam can start once all participants are ready.</p>}
+                        </div>
+                    )}
+                </div>
             </div>
-          )}
         </div>
       )}
     </div>

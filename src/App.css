@@ -1331,46 +1331,79 @@ p.time-taken strong {
   border-radius: 6px;
   font-size: 1.5rem;
 }
-/* --- Lobby Styles --- */
+
+/* Update these styles for the Lobby View */
+
 .participant-list {
   list-style: none;
   padding: 0;
-  margin: 1rem 0;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  margin: 0;
+  flex-grow: 1; /* Allows the list to take available space */
 }
+
 .participant-list li {
   display: flex;
   justify-content: space-between;
-  padding: 1rem;
+  align-items: center;
+  padding: 0.9rem 0.5rem;
   font-size: 1.1rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #f0f0f0;
 }
+
 .participant-list li:last-child {
-  border-bottom: none;
+    border-bottom: none;
 }
+
 .participant-list li.ready {
-  background-color: #d1e7dd;
+  background-color: #f0fff4; /* A very light green */
   font-weight: 500;
+  color: #228b22; /* Forest green text */
 }
+
+.lobby-actions {
+    margin-top: auto; /* Pushes this block to the bottom of the card */
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
 .readiness-check {
-  margin: 2rem 0;
-  font-size: 1.2rem;
+    margin: 0;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
+.readiness-check label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
 .readiness-check input {
-  width: 18px;
-  height: 18px;
-  margin-right: 0.5rem;
+    width: 18px;
+    height: 18px;
+    margin-right: 0.75rem;
 }
-.admin-controls button:disabled {
+
+.admin-controls {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.admin-controls .all-ready-notice {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+}
+
+/* We already have this rule but ensure it exists */
+.button-create-lobby:disabled {
   background-color: #6c757d;
-  border-color: #6c757d;
   cursor: not-allowed;
-}
-.lobby-content {
-  flex-grow: 1; /* Makes the content area fill the available vertical space */
-  overflow-y: auto; /* Adds a scrollbar if the participant list is too long */
-  min-height: 0; /* Ensures scrolling works correctly in a flex layout */
+  transform: none;
+  box-shadow: none;
 }
 
 /* ==========================================================================
@@ -1567,15 +1600,18 @@ p.time-taken strong {
     gap: 0.5rem;
 }
 
-.admin-setup-container label {
+/* Reusable styles for labels and inputs inside any setup card */
+
+.setup-card label {
   font-weight: 500;
   color: #555;
 }
 
-.admin-setup-container select,
-.admin-setup-container input[type="number"] {
-  color: #005a9e; /* Dark blue text color for both */
-  font-weight: 500; /* Matching font weight */
+.setup-card select,
+.setup-card input[type="text"],
+.setup-card input[type="number"] {
+  color: #005a9e; /* Dark blue text color */
+  font-weight: 500;
   padding: 0.75rem;
   font-size: 1rem;
   border-radius: 8px;
@@ -1584,8 +1620,9 @@ p.time-taken strong {
   width: 100%;
 }
 
-.admin-setup-container select:focus,
-.admin-setup-container input[type="number"]:focus {
+.setup-card select:focus,
+.setup-card input[type="text"]:focus,
+.setup-card input[type="number"]:focus {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
@@ -1634,4 +1671,45 @@ p.time-taken strong {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* ==========================================================================
+   Lobby & Form Card Styles
+   ========================================================================== */
+
+.centered-card-container {
+  max-width: 500px; /* Increased max-width for side-by-side layout */
+  margin: 1rem auto;
+  display: flex;
+  flex-direction: row; /* Changed to row for side-by-side cards */
+  align-items: stretch;
+  gap: 1.5rem;
+  flex-wrap: wrap; /* Allows cards to stack on smaller screens */
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.setup-card form {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 1.5rem;
+}
+
+.button-action-primary {
+  background-color: #007bff; /* Blue for general actions */
+  color: white;
+  border: none;
+  padding: 0.8rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.button-action-primary:hover {
+  background-color: #0069d9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }

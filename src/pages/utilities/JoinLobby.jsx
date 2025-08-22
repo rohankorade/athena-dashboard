@@ -35,16 +35,29 @@ function JoinLobby() {
       <div className="page-header">
         <h1>Join a Local Mock Exam</h1>
       </div>
-      <form onSubmit={handleSubmit} className="setup-form">
-        <label htmlFor="session-code">Enter Session Code:</label>
-        <input 
-          id="session-code" type="text" value={code}
-          onChange={e => { setCode(e.target.value.toUpperCase()); setError(''); }}
-          placeholder="e.g., AB12CD"
-        />
-        {error && <p style={{color: 'red'}}>{error}</p>}
-        <button type="submit" className="button button-primary">Join Lobby</button>
-      </form>
+      <div className="centered-card-container">
+        <div className="setup-card">
+          <h2>Enter Session Code</h2>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group-vertical">
+              <label htmlFor="session-code">Session Code</label>
+              <input 
+                id="session-code" 
+                type="text" 
+                value={code}
+                onChange={e => { setCode(e.target.value.toUpperCase()); setError(''); }}
+                placeholder="e.g., AB12CD"
+                autoFocus
+                required
+              />
+              {error && <p style={{color: 'red', marginTop: '0.5rem'}}>{error}</p>}
+            </div>
+            <div className="setup-actions">
+                <button type="submit" className="button-action-primary">Join Lobby</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }
