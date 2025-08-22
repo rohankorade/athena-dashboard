@@ -4,11 +4,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const utilities = [
-  { title: 'Pomodoro Timer', path: '/utilities/pomodoro-timer', description: 'Focus and break timer.' },
+  { title: 'Sessions Info', path: '/utilities/sessions', description: 'Review mock sessions that are currently ongoing or have been concluded.' },
   { title: 'Local Mock', path: '/utilities/local-mock/setup', description: 'Host a real-time exam over LAN.' },
   { title: 'Join Mock Exam', path: '/utilities/local-mock/join', description: 'Join a session with a code.' },
   { title: 'Pomodoro Timer', path: '/utilities/pomodoro-timer', description: 'Focus and break timer.' },
-  { title: 'Pomodoro Timer', path: '/utilities/pomodoro-timer', description: 'Focus and break timer.' }
 ];
 
 function Utilities() {
@@ -19,8 +18,8 @@ function Utilities() {
         <p>A collection of tools to aid your preparation.</p>
       </div>
       <div className="utilities-grid">
-        {utilities.map(util => (
-          <Link to={util.path} key={util.title} className="utility-card">
+        {utilities.map((util, index) => (
+          <Link to={util.path} key={`${util.title}-${index}`} className="utility-card">
             <h3>{util.title}</h3>
             <p>{util.description}</p>
           </Link>
