@@ -86,11 +86,61 @@ a.button:hover {
   flex-grow: 1;
   overflow-y: auto;
   min-height: 0;
-  padding-right: 1rem; /* Add some padding for the scrollbar */
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  color: #000000;
 }
 
 .question-header {
-  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+}
+
+.question-number-badge {
+  background-color: #EBF5FF;
+  color: #005A9E;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.font-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.font-size-button {
+  background-color: #f0f2f5;
+  border: 1px solid #ccc;
+  color: #333;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 1;
+}
+
+.font-size-button:hover {
+  background-color: #e0e0e0;
+}
+
+.font-size-label {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
 }
 
 .question-content {

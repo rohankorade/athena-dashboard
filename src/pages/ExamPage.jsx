@@ -18,6 +18,19 @@ function ExamPage() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [remainingTime, setRemainingTime] = useState(null);
+  const [fontSize, setFontSize] = useState(1); // Initial font size in rem
+
+  const FONT_SIZE_STEP = 0.125;
+  const MIN_FONT_SIZE = 0.875;
+  const MAX_FONT_SIZE = 1.25;
+
+  const increaseFontSize = () => {
+    setFontSize(prevSize => Math.min(prevSize + FONT_SIZE_STEP, MAX_FONT_SIZE));
+  };
+
+  const decreaseFontSize = () => {
+    setFontSize(prevSize => Math.max(prevSize - FONT_SIZE_STEP, MIN_FONT_SIZE));
+  };
 
   const handleAnswerUpdate = useCallback((status) => {
     const question = questions[currentQuestionIndex];
@@ -129,12 +142,19 @@ function ExamPage() {
         <div className="exam-left-panel">
           <div className="question-area">
             <div className="question-header">
-              <h2>Question {currentQuestion.question_number}</h2>
+              <div className="question-number-badge">
+                Question {currentQuestion.question_number}
+              </div>
+              <div className="font-size-controls">
+                <button onClick={decreaseFontSize} className="font-size-button">-</button>
+                <span className="font-size-label">Font Size</span>
+                <button onClick={increaseFontSize} className="font-size-button">+</button>
+              </div>
             </div>
-            <div className="question-content">
+            <div className="question-content" style={{ fontSize: `${fontSize}rem` }}>
               <p>{currentQuestion.question}</p>
             </div>
-            <div className="options-container">
+            <div className="options-container" style={{ fontSize: `${fontSize}rem` }}>
               {currentQuestion.options.map((option, index) => (
                 <div key={index} className="option">
                   <input
