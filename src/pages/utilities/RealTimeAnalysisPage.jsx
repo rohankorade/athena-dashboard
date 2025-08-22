@@ -1,9 +1,8 @@
+// src/pages/utilities/RealTimeAnalysisPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import { socket } from '../../socket'; // We are now using the single, shared socket instance
 
-const API_BASE = `http://${window.location.hostname}:5000`;
-const socket = io(API_BASE);
 
 function RealTimeAnalysisPage() {
   const { attemptId } = useParams();

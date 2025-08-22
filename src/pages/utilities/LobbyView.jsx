@@ -1,10 +1,8 @@
 // src/pages/utilities/LobbyView.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import { socket } from '../../socket';
 
-const API_BASE = `http://${window.location.hostname}:5000`;
-const socket = io(API_BASE);
 const ADMIN_USERNAME = "Rohan";
 
 function LobbyView() {

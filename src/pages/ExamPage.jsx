@@ -1,13 +1,10 @@
 // src/pages/ExamPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import { socket } from '../socket'; // Use the single, shared socket instance
 
 import QuestionPalette from '../components/QuestionPalette';
 import CountdownTimer from '../components/CountdownTimer';
-
-const API_BASE = `http://${window.location.hostname}:5000`;
-const socket = io(API_BASE);
 
 function ExamPage() {
   const { attemptId } = useParams();
@@ -78,17 +75,16 @@ function ExamPage() {
   };
 
   useEffect(() => {
+    const API_BASE = `http://${window.location.hostname}:5000`; // API_BASE is only needed for fetch
     const fetchData = async () => {
       try {
         setIsLoading(true);
         const attemptRes = await fetch(`${API_BASE}/api/exam-attempt/${attemptId}`);
         const attemptData = await attemptRes.json();
         setAttempt(attemptData);
-        setRemainingTime(attemptData.timeLimit); // Initialize timer from attempt data
+        setRemainingTime(attemptData.timeLimit);
 
-        // Join the session's socket.io room to receive timer ticks
         if (attemptData.examSession) {
-            // We need to join the room using the session's ID, not the whole object.
             socket.emit('join_lobby', attemptData.examSession._id);
         }
 
