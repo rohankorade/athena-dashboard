@@ -366,7 +366,8 @@ app.get('/api/exam-questions/:collectionName', async (req, res) => {
 app.get('/api/exam-attempt/:attemptId', async (req, res) => {
     try {
         const { attemptId } = req.params;
-        const attempt = await MockExamAttempt.findById(attemptId);
+        // Populate the examSession to get access to its scoring details
+        const attempt = await MockExamAttempt.findById(attemptId).populate('examSession');
         if (!attempt) { return res.status(404).json({ message: "Exam attempt not found." }); }
         res.json(attempt);
     } catch (error) {

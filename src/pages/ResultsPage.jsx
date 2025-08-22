@@ -32,7 +32,7 @@ function ResultsPage() {
         fetchData();
     }, [attemptId]);
 
-    if (isLoading || !attempt || questions.length === 0) {
+    if (isLoading || !attempt || questions.length === 0 || !attempt.examSession) {
         return <div className="page-container">Loading Results...</div>;
     }
 
@@ -55,7 +55,7 @@ function ResultsPage() {
         }
     });
 
-    // New calculations for time taken and total score
+    // New calculations for time taken
     const timeTaken = attempt.submittedAt && attempt.startTime ? new Date(attempt.submittedAt) - new Date(attempt.startTime) : 0;
     const formatTime = (ms) => {
         const seconds = Math.floor(ms / 1000) % 60;
@@ -64,7 +64,13 @@ function ResultsPage() {
         return `${hours > 0 ? `${hours}h ` : ''}${minutes > 0 ? `${minutes}m ` : ''}${seconds}s`;
     };
 
-    const totalScore = (correctCount * 2) - (incorrectCount * 0.5);
+    // Use dynamic scoring from the populated session data
+    const { maxMarks, totalQuestions, negativeMarking } = attempt.examSession;
+    const marksPerCorrectAnswer = totalQuestions > 0 ? maxMarks / totalQuestions : 0;
+    const totalScore = (correctCount * marksPerCorrectAnswer) - (incorrectCount * negativeMarking);
+
+    // Also, display the score from the backend for consistency
+    const storedScore = attempt.finalScore;
 
     return (
         <div className="page-container">
@@ -90,7 +96,7 @@ function ResultsPage() {
                         </div>
                         <div className="stat-item">
                             <span className="stat-label">Total Score</span>
-                            <span className="stat-value" style={{ color: 'blue' }}>{totalScore.toFixed(2)}</span>
+                            <span className="stat-value" style={{ color: 'blue' }}>{parseFloat(storedScore).toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
