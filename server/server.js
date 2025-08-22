@@ -274,6 +274,18 @@ app.get('/api/mocks/collections', async (req, res) => {
     }
 });
 
+// GET total questions for a specific collection
+app.get('/api/mocks/collections/:collectionName/details', async (req, res) => {
+    try {
+        const { collectionName } = req.params;
+        const questionDb = mongoose.connection.useDb('mockPapers');
+        const totalQuestions = await questionDb.db.collection(collectionName).countDocuments();
+        res.json({ totalQuestions });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching collection details', error });
+    }
+});
+
 // GET all exam sessions
 app.get('/api/mocks/sessions', async (req, res) => {
     try {
@@ -298,17 +310,20 @@ app.get('/api/mocks/sessions/:sessionId/attempts', async (req, res) => {
 // POST to create a new exam session (lobby)
 app.post('/api/mocks/create-session', async (req, res) => {
     try {
-        const { collectionName, timeLimit } = req.body; // Extract timeLimit
+        const { collectionName, timeLimit, totalQuestions, maxMarks, negativeMarking } = req.body;
         if (!collectionName) {
             return res.status(400).json({ message: 'Collection name is required.' });
         }
 
         const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        // Prepare session data
+        // Prepare session data, including the new fields
         const sessionData = {
             sessionCode,
-            examCollectionName: collectionName
+            examCollectionName: collectionName,
+            totalQuestions,
+            maxMarks,
+            negativeMarking
         };
 
         // If a time limit is provided, convert it from minutes to seconds and add it
@@ -506,6 +521,17 @@ io.on('connection', (socket) => {
       const attempt = await MockExamAttempt.findById(attemptId);
       if (!attempt || attempt.isCompleted) { return; }
 
+      // Fetch the session to get scoring details
+      const session = await MockExamSession.findById(attempt.examSession);
+      if (!session) {
+          console.error(`Could not find session ${attempt.examSession} for attempt ${attemptId}`);
+          // Simple fallback to prevent crash, though this should ideally not happen
+          return;
+      }
+
+      const { totalQuestions, maxMarks, negativeMarking } = session;
+      const marksPerCorrectAnswer = totalQuestions > 0 ? maxMarks / totalQuestions : 0;
+
       const questionDb = mongoose.connection.useDb('mockPapers');
       const questions = await questionDb.db.collection(attempt.examCollectionName).find({}).toArray();
 
@@ -514,10 +540,12 @@ io.on('connection', (socket) => {
         if (answer.status === 'answered') {
           const question = questions.find(q => q.question_number === answer.question_number);
           const userAnswerAsString = String(answer.selected_option_index + 1);
+
           if (question && userAnswerAsString === question.correct_answer) {
-            score += 2;
+            score += marksPerCorrectAnswer;
           } else {
-            score -= 0.66;
+            // Only apply negative marking if it's a wrong answer, not just unattempted
+            score -= negativeMarking;
           }
         }
       });
