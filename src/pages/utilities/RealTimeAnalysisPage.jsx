@@ -79,7 +79,7 @@ function RealTimeAnalysisPage() {
 
       <div className="analysis-dashboard">
         <div className="stats-grid live-stats">
-          <div className="stat-item">
+          <div className="stat-item score">
             <span className="stat-label">Score</span>
             <span className="stat-value">{attempt.isCompleted ? stats.score : 'N/A'}</span>
           </div>

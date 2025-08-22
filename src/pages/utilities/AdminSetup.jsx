@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 function AdminSetup() {
   const [collections, setCollections] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState('');
-  const [timeLimit, setTimeLimit] = useState(7200); // Default time in minutes
+  const [timeLimit, setTimeLimit] = useState(120); // Default time in minutes
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 

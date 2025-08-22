@@ -184,11 +184,16 @@ a.button:hover {
   cursor: pointer;
   background-color: #fff;
   font-weight: bold;
+  display: flex;               /* make it flex */
+  align-items: center;         /* vertical center */
+  justify-content: center;     /* horizontal center */
 }
 
 .palette-button.unseen {
   background-color: #f0f0f0;
+  color: #555;  /* softer than black but still readable */
 }
+
 .palette-button.unanswered {
   background-color: #ef5350; /* Red */
   color: white;
@@ -263,7 +268,7 @@ a.button:hover {
   flex-grow: 1;
   min-height: 0;
   padding: 1rem;
-  gap: 1rem;
+  gap: 0.2rem;
   height: 100%;
 }
 
@@ -1127,7 +1132,7 @@ p.time-taken strong {
   position: sticky;
   top: 0;
   z-index: 10;
-  padding: 1rem;
+  padding: 0.4rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1448,18 +1453,60 @@ p.time-taken strong {
 }
 
 .live-stats .stat-item {
+  background-color: white;
   color: #fff;
   padding: 1rem;
 }
 
 .live-stats .stat-item .stat-label {
-  color: rgba(255, 255, 255, 0.8);
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
 }
 .live-stats .stat-item .stat-value {
   font-size: 2rem;
 }
 
-.live-stats .stat-item.answered { background-color: #28a745; }
-.live-stats .stat-item.unanswered { background-color: #dc3545; }
-.live-stats .stat-item.marked { background-color: #6f42c1; }
-.live-stats .stat-item.unseen { background-color: #6c757d; }
+/* --- Color Themes for Stats --- */
+/* Cool strong blue */
+.live-stats .stat-item.score {
+  background-color: #0C4A6E;   /* deep cyan blue */
+}
+.live-stats .stat-item.score .stat-value {
+  color: #7DD3FC;              /* aqua highlight */
+}
+
+/* Fresh leafy green */
+.live-stats .stat-item.answered {
+  background-color: #15803D;   /* green */
+}
+.live-stats .stat-item.answered .stat-value {
+  color: #BBF7D0;              /* mint */
+}
+
+/* Bold crimson red */
+.live-stats .stat-item.unanswered {
+  background-color: #B91C1C;   /* deep red */
+}
+.live-stats .stat-item.unanswered .stat-value {
+  color: #FCA5A5;              /* rose */
+}
+
+/* Bright sunflower yellow */
+.live-stats .stat-item.marked {
+  background-color: #CA8A04;   /* golden yellow */
+}
+.live-stats .stat-item.marked .stat-value {
+  color: #FEF08A;              /* pastel lemon */
+}
+
+/* Dark techno purple */
+.live-stats .stat-item.unseen {
+  background-color: #581C87;   /* strong purple */
+}
+.live-stats .stat-item.unseen .stat-value {
+  color: #E9D5FF;              /* lavender glow */
+}
+
+
+
