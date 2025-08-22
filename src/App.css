@@ -1098,11 +1098,19 @@ a.button:hover {
 .utility-card h3 {
   margin: 0 0 0.5rem 0;
   color: #007bff;
+  font-size: 1.3rem;
 }
 
 .utility-card p {
   margin: 0;
   color: #6c757d;
+}
+.utility-card .card-divider {
+  height: 2px;
+  width: 30px;
+  background-color: #007bff; /* Matches the title color */
+  margin: 0.75rem 0; /* Creates vertical space around the divider */
+  border-radius: 1px;
 }
 
 /* ==========================================================================
