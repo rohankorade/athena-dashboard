@@ -1509,4 +1509,129 @@ p.time-taken strong {
 }
 
 
+/* ==========================================================================
+   Admin Setup Page Styles
+   ========================================================================== */
 
+.admin-setup-container {
+  max-width: 900px; /* Increased max-width for side-by-side layout */
+  margin: 1rem auto;
+  display: flex;
+  flex-direction: row; /* Changed to row for side-by-side cards */
+  align-items: stretch;
+  gap: 1.5rem;
+  flex-wrap: wrap; /* Allows cards to stack on smaller screens */
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.setup-card {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  flex: 1;
+  min-width: 350px;
+  display: flex; /* Added for better internal alignment */
+  flex-direction: column; /* Added for better internal alignment */
+}
+
+.setup-card h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.75rem;
+}
+
+.form-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.form-group.custom-block-padding {
+  padding: 0 25px 0 25px; /* top right bottom left */
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.admin-setup-container label {
+  font-weight: 500;
+  color: #555;
+}
+
+.admin-setup-container select,
+.admin-setup-container input[type="number"] {
+  color: #005a9e; /* Dark blue text color for both */
+  font-weight: 500; /* Matching font weight */
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: #f8f9fa;
+  width: 100%;
+}
+
+.admin-setup-container select:focus,
+.admin-setup-container input[type="number"]:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.form-static-display {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+  margin-top: auto; /* Pushes the grid to the bottom of the card */
+}
+
+.setup-actions {
+  /* This can be part of a third card or a separate container if needed */
+  flex-basis: 100%; /* Make this container span the full width */
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.button-create-lobby {
+  background-color: #28a745; /* Green */
+  color: white;
+  border: none;
+  padding: 0.8rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.button-create-lobby:hover {
+  background-color: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.button-create-lobby:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}

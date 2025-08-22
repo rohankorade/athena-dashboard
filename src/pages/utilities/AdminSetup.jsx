@@ -76,55 +76,70 @@ function AdminSetup() {
         <h1>Create a Local Mock Exam</h1>
         <p>Select a question paper and create a lobby for participants to join.</p>
       </div>
-      <div className="setup-form">
-        <label htmlFor="collection-select">Select Test Paper:</label>
-        <select 
-          id="collection-select"
-          value={selectedCollection} 
-          onChange={e => setSelectedCollection(e.target.value)}
-          disabled={isLoading}
-        >
-          {collections.map(name => <option key={name} value={name}>{name}</option>)}
-        </select>
+      
+      <div className="admin-setup-container">
+        {/* Card 1: Test Paper Selection */}
+        <div className="setup-card">
+          <h2>1. Select Test Paper</h2>
+          <div className="form-group">
+            <select 
+              id="collection-select"
+              value={selectedCollection} 
+              onChange={e => setSelectedCollection(e.target.value)}
+              disabled={isLoading}
+            >
+              {collections.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </div>
+          <div className="form-group custom-block-padding">
+            <label>Total Questions</label>
+            <p className="form-static-display">
+              {isLoading ? 'Loading...' : (totalQuestions > 0 ? totalQuestions : 'N/A')}
+            </p>
+          </div>
+        </div>
 
-        {isLoading && <p>Loading questions count...</p>}
+        {/* Card 2: Exam Configuration */}
+        <div className="setup-card">
+          <h2>2. Configure Exam</h2>
+          <div className="form-grid">
+            <div className="form-group-vertical">
+              <label htmlFor="time-limit-input">Time Limit (mins)</label>
+              <input
+                id="time-limit-input"
+                type="number"
+                value={timeLimit}
+                onChange={e => setTimeLimit(e.target.value)}
+              />
+            </div>
+            <div className="form-group-vertical">
+              <label htmlFor="max-marks-input">Maximum Marks</label>
+              <input
+                id="max-marks-input"
+                type="number"
+                value={maxMarks}
+                onChange={e => setMaxMarks(e.target.value)}
+              />
+            </div>
+            <div className="form-group-vertical">
+              <label htmlFor="negative-marking-input">Negative Marking</label>
+              <input
+                id="negative-marking-input"
+                type="number"
+                step="0.01"
+                value={negativeMarking}
+                onChange={e => setNegativeMarking(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
 
-        <label htmlFor="total-questions-display">Total Questions:</label>
-        <p id="total-questions-display" className="form-static-display">
-          {totalQuestions > 0 ? totalQuestions : 'N/A'}
-        </p>
-
-        <label htmlFor="time-limit-input">Set Time Limit (minutes):</label>
-        <input
-          id="time-limit-input"
-          type="number"
-          value={timeLimit}
-          onChange={e => setTimeLimit(e.target.value)}
-          className="time-limit-input"
-        />
-
-        <label htmlFor="max-marks-input">Set Maximum Marks:</label>
-        <input
-          id="max-marks-input"
-          type="number"
-          value={maxMarks}
-          onChange={e => setMaxMarks(e.target.value)}
-          className="time-limit-input"
-        />
-
-        <label htmlFor="negative-marking-input">Negative Marking (e.g., 0.25):</label>
-        <input
-          id="negative-marking-input"
-          type="number"
-          step="0.01"
-          value={negativeMarking}
-          onChange={e => setNegativeMarking(e.target.value)}
-          className="time-limit-input"
-        />
-
-        <button onClick={handleCreateLobby} className="button button-primary" disabled={isLoading || totalQuestions === 0}>
-          Create Lobby
-        </button>
+        {/* Action Button */}
+        <div className="setup-actions">
+            <button onClick={handleCreateLobby} className="button-create-lobby" disabled={isLoading || totalQuestions === 0}>
+            Create Lobby
+            </button>
+        </div>
       </div>
     </div>
   );
