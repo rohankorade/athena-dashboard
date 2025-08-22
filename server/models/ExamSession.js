@@ -15,6 +15,18 @@ const examSessionSchema = new mongoose.Schema({
     type: Number, // in seconds
     default: 432000
   },
+  totalQuestions: {
+    type: Number,
+    default: 100
+  },
+  maxMarks: {
+    type: Number,
+    default: 200
+  },
+  negativeMarking: {
+    type: Number,
+    default: 0.5
+  },
   status: {
     type: String,
     enum: ['lobby', 'active', 'finished'],
