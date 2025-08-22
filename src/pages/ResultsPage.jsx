@@ -67,12 +67,12 @@ function ResultsPage() {
     const totalScore = (correctCount * 2) - (incorrectCount * 0.5);
 
     return (
-        <div className="page-container" style={{padding: '2rem'}}>
+        <div className="page-container">
             <div className="results-header">
                 <div className="results-header-info">
                     <h1>{attempt.examCollectionName}</h1>
                     <p>Submitted by: {attempt.username}</p>
-                    <p>Time Taken: {formatTime(timeTaken)}</p>
+                    <p class="time-taken"><strong>Time Taken:</strong> {formatTime(timeTaken)}</p>
                 </div>
                 <div className="results-header-stats">
                     <div className="stats-grid">
@@ -119,9 +119,7 @@ function ResultsPage() {
                             </div>
                             <div className="result-item-body">
                                 <p><strong>Your Answer:</strong> {userAnswer?.selected_option_index !== null && userAnswer.selected_option_index < question.options.length ? question.options[userAnswer.selected_option_index] : 'Not Answered'}</p>
-                                {userAnswer?.status === 'answered' && !isCorrect && (
-                                    <p><strong>Correct Answer:</strong> {question.options[correctAnswerIndex]}</p>
-                                )}
+                                <p><strong>Correct Answer:</strong> {question.options[correctAnswerIndex]}</p>
                             </div>
                         </div>
                     );

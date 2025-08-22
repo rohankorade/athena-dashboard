@@ -1050,83 +1050,116 @@ a.button:hover {
   color: #6c757d;
 }
 
-/* --- Results Page Styles --- */
+/* ==========================================================================
+   Results Page Styles
+   ========================================================================== */
+
+p.time-taken {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: #bbf7d0;
+  padding: 6px 12px;
+  border-radius: 12px;
+  display: inline-block;
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+p.time-taken strong {
+  color: #007bff;
+  font-weight: 600;
+}
+
+
+/* --- Header --- */
 .results-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #fff;
-  padding: 1.5rem 2rem;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-  margin-bottom: 1.5rem;
 }
 
 .results-header-info h1 {
-  margin: 0 0 0.25rem 0;
+  font-family: 'Inter', sans-serif;
   font-size: 1.8rem;
-  color: #343a40;
+  font-weight: 700;
+  color: #222;
+  letter-spacing: -0.5px;
+  margin: 0;
+  padding: 0.5rem 0;
+  border-bottom: 2px solid #007bff; /* Accent underline */
+  display: inline-block;
+  line-height: 1.2;
 }
 
 .results-header-info p {
-  margin: 0;
-  font-size: 1rem;
-  color: #6c757d;
+  margin: 0.25rem 0;
+  font-size: 0.95rem;
+  color: #6b7280;
 }
 
+/* --- Stats Grid --- */
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem 2rem;
+  display: flex;
+  gap: 1rem;
 }
 
 .stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.5rem 1rem;
+  display: grid;
+  min-width: 120px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 0.2rem;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .stat-label {
-  font-size: 0.9rem;
-  color: #6c757d;
-  margin-bottom: 0.25rem;
+  font-size: 1rem;
   font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
 }
 
 .stat-value {
-  font-size: 1.8rem;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
+/* --- Results List --- */
 .detailed-results {
   flex-grow: 1;
   overflow-y: auto;
-  min-height: 0;
-  padding-right: 1rem; /* Add padding for scrollbar */
+  padding: 0.5rem 0;
+  padding-right: 0.5rem; /* Prevents content from shifting when scrollbar appears */
 }
 
-.result-question-text {
-  white-space: pre-wrap; /* Ensures question formatting is preserved */
-  font-weight: 400;
-  font-size: 1.2rem;
-  line-height: 1.6;
-  margin: 0;
-}
-
+/* --- Question Card --- */
 .result-item {
   background-color: #fff;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  transition: box-shadow 0.2s;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .result-item:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
+/* --- Question Header --- */
 .result-item-header {
   display: flex;
   justify-content: space-between;
@@ -1134,35 +1167,53 @@ a.button:hover {
   margin-bottom: 1rem;
 }
 
-.result-item-body p {
-  margin: 0.5rem 0;
-  color: #495057;
+.result-question-text {
+  font-weight: 500;
+  font-size: 1.05rem;
+  color: #111827;
+  margin: 0;
+  flex: 1;
+  padding-right: 1rem;
 }
 
+/* --- Badge --- */
 .result-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
   font-size: 0.8rem;
   font-weight: 600;
   color: #fff;
   flex-shrink: 0;
-  margin-left: 1rem;
 }
 
 .result-badge.correct {
-  background-color: #2ecc71; /* Flat Green */
+  background-color: #10b981; /* Emerald */
 }
 
 .result-badge.incorrect {
-  background-color: #e74c3c; /* Flat Red */
+  background-color: #ef4444; /* Red */
 }
 
 .result-badge.unanswered {
-  background-color: #95a5a6; /* Flat Gray */
+  background-color: #9ca3af; /* Gray */
+}
+
+/* --- Answer Section --- */
+.result-item-body p {
+  margin: 0.4rem 0;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.result-item-body strong {
+  color: #111827;
 }
 
 
-/* --- Pomodoro Timer Styles --- */
+
+/* ==========================================================================
+   5. Pomodoro Timer Styles
+   ========================================================================== */
 
 .pomodoro-container {
   max-width: 480px;
