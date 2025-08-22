@@ -277,10 +277,25 @@ app.get('/api/mocks/collections', async (req, res) => {
 // POST to create a new exam session (lobby)
 app.post('/api/mocks/create-session', async (req, res) => {
     try {
-        const { collectionName } = req.body;
-        if (!collectionName) { return res.status(400).json({ message: 'Collection name is required.' }); }
+        const { collectionName, timeLimit } = req.body; // Extract timeLimit
+        if (!collectionName) {
+            return res.status(400).json({ message: 'Collection name is required.' });
+        }
+
         const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        const newSession = new MockExamSession({ sessionCode, examCollectionName: collectionName });
+
+        // Prepare session data
+        const sessionData = {
+            sessionCode,
+            examCollectionName: collectionName
+        };
+
+        // If a time limit is provided, convert it from minutes to seconds and add it
+        if (timeLimit) {
+            sessionData.timeLimit = timeLimit * 60;
+        }
+
+        const newSession = new MockExamSession(sessionData);
         await newSession.save();
         res.status(201).json(newSession);
     } catch (error) {
@@ -361,6 +376,11 @@ io.on('connection', (socket) => {
         const session = await MockExamSession.findById(sessionId);
         if (!session || activeExamTimers[sessionId]) { return; }
 
+        // Mark the session as active
+        session.status = 'active';
+        await session.save();
+        broadcastLobbyUpdate(sessionId);
+
         const questionDb = mongoose.connection.useDb('mockPapers');
         const questions = await questionDb.db.collection(session.examCollectionName).find({}).toArray();
         const initialAnswers = questions.map(q => ({
@@ -369,7 +389,7 @@ io.on('connection', (socket) => {
         }));
 
         const startTime = new Date();
-        const timeLimit = 7200;
+        const timeLimit = session.timeLimit; // Use timeLimit from session
 
         const createdAttempts = await Promise.all(
             session.participants.map(participant => {
@@ -394,21 +414,40 @@ io.on('connection', (socket) => {
             }
         }
 
-        const timerId = setInterval(() => {
+        // Set a timeout to auto-submit all exams when the session time limit is reached
+        const sessionTimer = setTimeout(async () => {
+            console.log(`Session ${sessionId} time limit reached. Auto-submitting all attempts.`);
+            const attemptsToSubmit = await MockExamAttempt.find({ examSession: sessionId, isCompleted: false });
+            for (const attempt of attemptsToSubmit) {
+                // Find the socket for the user to emit 'exam_finished' event
+                const userSocket = socketsInRoom.find(s => s.username === attempt.username);
+                await submitExamAttempt(attempt._id, userSocket);
+            }
+            // Clean up
+            if (activeExamTimers[sessionId]) {
+                clearInterval(activeExamTimers[sessionId].tickTimer);
+                delete activeExamTimers[sessionId];
+            }
+            // Mark session as finished
+            session.status = 'finished';
+            await session.save();
+            broadcastLobbyUpdate(sessionId);
+        }, timeLimit * 1000); // Convert seconds to milliseconds
+
+        // Interval for broadcasting remaining time
+        const tickTimer = setInterval(() => {
             const now = new Date();
             const elapsedSeconds = Math.floor((now - startTime) / 1000);
             const remainingTime = Math.max(0, timeLimit - elapsedSeconds);
             io.to(sessionId).emit('timer_tick', { remainingTime });
 
             if (remainingTime <= 0) {
-                console.log(`Timer finished for session: ${sessionId}`);
-                clearInterval(timerId);
-                delete activeExamTimers[sessionId];
+                clearInterval(tickTimer);
             }
         }, 1000);
 
-        activeExamTimers[sessionId] = timerId;
-        console.log(`Timer started for session: ${sessionId}`);
+        activeExamTimers[sessionId] = { sessionTimer, tickTimer };
+        console.log(`Timer started for session: ${sessionId} with a limit of ${timeLimit} seconds.`);
 
     } catch (error) {
         console.error("Error starting exam:", error);
@@ -426,7 +465,8 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('submit_exam', async ({ attemptId }) => {
+  // Refactored submission logic into a reusable function
+  const submitExamAttempt = async (attemptId, socket) => {
     try {
       const attempt = await MockExamAttempt.findById(attemptId);
       if (!attempt || attempt.isCompleted) { return; }
@@ -452,11 +492,22 @@ io.on('connection', (socket) => {
       attempt.submittedAt = new Date();
       await attempt.save();
 
-      socket.emit('exam_finished', { attemptId: attempt._id });
+      // If a socket is provided, emit the finished event to that specific user
+      if (socket) {
+        socket.emit('exam_finished', { attemptId: attempt._id });
+      } else {
+        // If no socket (e.g. server-side submission), we can broadcast if needed,
+        // but for now, we'll just log it. A specific user event is better.
+        console.log(`Attempt ${attempt._id} submitted by server.`);
+      }
 
     } catch (error) {
         console.error("Error submitting exam:", error);
     }
+  };
+
+  socket.on('submit_exam', async ({ attemptId }) => {
+      await submitExamAttempt(attemptId, socket);
   });
 
   socket.on('disconnect', () => {
