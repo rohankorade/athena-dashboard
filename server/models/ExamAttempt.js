@@ -63,4 +63,4 @@ const examAttemptSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('ExamAttempt', examAttemptSchema);
+module.exports = examAttemptSchema;

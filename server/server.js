@@ -11,8 +11,8 @@ const Note = require('./models/Note');
 const Exam = require('./models/Exam'); // Assuming Exam.js is now in models
 const TestSeries = require('./models/TestSeries');
 const Test = require('./models/Test');
-const ExamSession = require('./models/ExamSession');
-const ExamAttempt = require('./models/ExamAttempt');
+const ExamSessionSchema = require('./models/ExamSession');
+const ExamAttemptSchema = require('./models/ExamAttempt');
 
 const activeExamTimers = {};
 
@@ -43,8 +43,8 @@ mongoose.connect(mongoURI)
 
 // Get a connection to the localMocks DB and compile models on it
 const mockDb = mongoose.connection.useDb('localMocks', { useCache: true });
-const MockExamSession = mockDb.model('ExamSession', require('./models/ExamSession').schema);
-const MockExamAttempt = mockDb.model('ExamAttempt', require('./models/ExamAttempt').schema);
+const MockExamSession = mockDb.model('ExamSession', ExamSessionSchema);
+const MockExamAttempt = mockDb.model('ExamAttempt', ExamAttemptSchema);
 
 
 // --- API Routes ---

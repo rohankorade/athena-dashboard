@@ -38,4 +38,4 @@ const examSessionSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-module.exports = mongoose.model('ExamSession', examSessionSchema);
+module.exports = examSessionSchema;
