@@ -274,6 +274,27 @@ app.get('/api/mocks/collections', async (req, res) => {
     }
 });
 
+// GET all exam sessions
+app.get('/api/mocks/sessions', async (req, res) => {
+    try {
+        const sessions = await MockExamSession.find().sort({ createdAt: -1 });
+        res.json(sessions);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching sessions', error });
+    }
+});
+
+// GET all attempts for a specific session
+app.get('/api/mocks/sessions/:sessionId/attempts', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const attempts = await MockExamAttempt.find({ examSession: sessionId }).sort({ createdAt: -1 });
+        res.json(attempts);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching attempts for session', error });
+    }
+});
+
 // POST to create a new exam session (lobby)
 app.post('/api/mocks/create-session', async (req, res) => {
     try {
@@ -454,12 +475,26 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('join_attempt_room', (attemptId) => {
+    const roomName = `attempt-room-${attemptId}`;
+    socket.join(roomName);
+    console.log(`User ${socket.id} joined attempt watch room: ${roomName}`);
+  });
+
   socket.on('update_answer', async ({ attemptId, question_number, selected_option_index, status }) => {
     try {
         await MockExamAttempt.updateOne(
             { _id: attemptId, "answers.question_number": question_number },
             { $set: { "answers.$.selected_option_index": selected_option_index, "answers.$.status": status }}
         );
+
+        // After updating, fetch the entire attempt and broadcast it to the watch room
+        const updatedAttempt = await MockExamAttempt.findById(attemptId);
+        if (updatedAttempt) {
+            const roomName = `attempt-room-${attemptId}`;
+            io.to(roomName).emit('attempt_update', updatedAttempt);
+        }
+
     } catch (error) {
         console.error("Error updating answer:", error);
     }

@@ -27,6 +27,9 @@ import JoinLobby from './pages/utilities/JoinLobby.jsx';
 import LobbyView from './pages/utilities/LobbyView.jsx';
 import ExamPage from './pages/ExamPage.jsx';
 import ResultsPage from './pages/ResultsPage.jsx';
+import SessionListPage from './pages/utilities/SessionListPage.jsx';
+import SessionAttemptsPage from './pages/utilities/SessionAttemptsPage.jsx';
+import RealTimeAnalysisPage from './pages/utilities/RealTimeAnalysisPage.jsx';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -62,6 +65,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="utilities/local-mock/join" element={<JoinLobby />} />
           {/* This route is for the admin to view the lobby within the dashboard */}
           <Route path="utilities/local-mock/lobby/:sessionId" element={<LobbyView />} />
+          <Route path="utilities/sessions" element={<SessionListPage />} />
+          <Route path="utilities/sessions/:sessionId" element={<SessionAttemptsPage />} />
+          <Route path="utilities/sessions/:sessionId/attempts/:attemptId" element={<RealTimeAnalysisPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
