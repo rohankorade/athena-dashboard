@@ -3,6 +3,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { SocketProvider } from './contexts/SocketContext.jsx'; // Import the SocketProvider
 import App from './App.jsx'
 import './index.css'
 import './App.css'
@@ -34,42 +35,44 @@ import RealTimeAnalysisPage from './pages/utilities/RealTimeAnalysisPage.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <Routes>
-        {/* --- Public, Self-Contained Routes --- */}
-        {/* These routes are wrapped in a minimal layout to provide a consistent full-screen background */}
-        <Route element={<ParticipantLayout />}>
-          <Route path="/join" element={<JoinLobby />} />
-          <Route path="/local-mock/lobby/:sessionId" element={<LobbyView />} />
-          <Route path="/exam/:attemptId" element={<ExamPage />} />
-          <Route path="/results/:attemptId" element={<ResultsPage />} />
-        </Route>
+    <SocketProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* --- Public, Self-Contained Routes --- */}
+          {/* These routes are wrapped in a minimal layout to provide a consistent full-screen background */}
+          <Route element={<ParticipantLayout />}>
+            <Route path="/join" element={<JoinLobby />} />
+            <Route path="/local-mock/lobby/:sessionId" element={<LobbyView />} />
+            <Route path="/exam/:attemptId" element={<ExamPage />} />
+            <Route path="/results/:attemptId" element={<ResultsPage />} />
+          </Route>
 
 
-        {/* --- Main Application Routes (with Layout) --- */}
-        {/* App component is the parent layout for all nested routes */}
-        <Route path="/" element={<App />}>
-          {/* Child pages that will render inside App's <Outlet> */}
-          <Route index element={<DashboardHome />} />
-          <Route path="csp" element={<CSP />} />
-          <Route path="editorials" element={<Editorials />} />
-          <Route path="editorials/view/:noteId" element={<NoteView />} />
-          <Route path="general-studies" element={<GeneralStudies />} />
-          <Route path="sociology" element={<Sociology />} />
-          <Route path="answer-writing" element={<AnswerWriting />} />
+          {/* --- Main Application Routes (with Layout) --- */}
+          {/* App component is the parent layout for all nested routes */}
+          <Route path="/" element={<App />}>
+            {/* Child pages that will render inside App's <Outlet> */}
+            <Route index element={<DashboardHome />} />
+            <Route path="csp" element={<CSP />} />
+            <Route path="editorials" element={<Editorials />} />
+            <Route path="editorials/view/:noteId" element={<NoteView />} />
+            <Route path="general-studies" element={<GeneralStudies />} />
+            <Route path="sociology" element={<Sociology />} />
+            <Route path="answer-writing" element={<AnswerWriting />} />
 
-          {/* Nested routes for utilities, visible within the main app layout */}
-          <Route path="utilities" element={<Utilities />} />
-          <Route path="utilities/pomodoro-timer" element={<PomodoroTimer />} />
-          <Route path="utilities/local-mock/setup" element={<AdminSetup />} />
-          <Route path="utilities/local-mock/join" element={<JoinLobby />} />
-          {/* This route is for the admin to view the lobby within the dashboard */}
-          <Route path="utilities/local-mock/lobby/:sessionId" element={<LobbyView />} />
-          <Route path="utilities/sessions" element={<SessionListPage />} />
-          <Route path="utilities/sessions/:sessionId" element={<SessionAttemptsPage />} />
-          <Route path="utilities/sessions/:sessionId/attempts/:attemptId" element={<RealTimeAnalysisPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+            {/* Nested routes for utilities, visible within the main app layout */}
+            <Route path="utilities" element={<Utilities />} />
+            <Route path="utilities/pomodoro-timer" element={<PomodoroTimer />} />
+            <Route path="utilities/local-mock/setup" element={<AdminSetup />} />
+            <Route path="utilities/local-mock/join" element={<JoinLobby />} />
+            {/* This route is for the admin to view the lobby within the dashboard */}
+            <Route path="utilities/local-mock/lobby/:sessionId" element={<LobbyView />} />
+            <Route path="utilities/sessions" element={<SessionListPage />} />
+            <Route path="utilities/sessions/:sessionId" element={<SessionAttemptsPage />} />
+            <Route path="utilities/sessions/:sessionId/attempts/:attemptId" element={<RealTimeAnalysisPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </SocketProvider>
   </React.StrictMode>,
 )
