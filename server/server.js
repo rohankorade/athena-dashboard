@@ -13,6 +13,9 @@ const TestSeries = require('./models/TestSeries');
 const Test = require('./models/Test');
 const ExamSessionSchema = require('./models/ExamSession');
 const ExamAttemptSchema = require('./models/ExamAttempt');
+const PomodoroSetting = require('./models/PomodoroSetting');
+const Task = require('./models/Task');
+const PomodoroSession = require('./models/PomodoroSession');
 
 const activeExamTimers = {};
 
@@ -36,9 +39,9 @@ app.use(cors());
 app.use(express.json());
 
 // --- MongoDB Connection ---
-const mongoURI = 'mongodb://localhost:27017/upscDashboard';
+const mongoURI = 'mongodb://localhost:27017/athenaUtilities';
 mongoose.connect(mongoURI)
-    .then(() => console.log('MongoDB connected successfully.'))
+    .then(() => console.log('MongoDB connected successfully to athenaUtilities.'))
     .catch(err => console.error('MongoDB connection error:', err));
 
 // Get a connection to the localMocks DB and compile models on it
@@ -48,6 +51,114 @@ const MockExamAttempt = mockDb.model('ExamAttempt', ExamAttemptSchema);
 
 
 // --- API Routes ---
+
+// --- Pomodoro Timer API ---
+
+// GET Pomodoro Settings
+app.get('/api/pomodoro/settings', async (req, res) => {
+    try {
+        let settings = await PomodoroSetting.findOne();
+        if (!settings) {
+            // If no settings exist, create and save the default settings
+            settings = new PomodoroSetting();
+            await settings.save();
+        }
+        res.json(settings);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching Pomodoro settings', error });
+    }
+});
+
+// PUT (Update) Pomodoro Settings
+app.put('/api/pomodoro/settings', async (req, res) => {
+    try {
+        const updatedSettings = await PomodoroSetting.findOneAndUpdate({}, req.body, {
+            new: true, // Return the updated document
+            upsert: true, // Create if it doesn't exist
+            runValidators: true,
+        });
+        res.json(updatedSettings);
+    } catch (error) {
+        res.status(400).json({ message: 'Error updating Pomodoro settings', error });
+    }
+});
+
+// GET all tasks
+app.get('/api/tasks', async (req, res) => {
+    try {
+        const tasks = await Task.find().sort({ createdAt: 'desc' });
+        res.json(tasks);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching tasks', error });
+    }
+});
+
+// POST a new task
+app.post('/api/tasks', async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text) {
+            return res.status(400).json({ message: 'Task text is required.' });
+        }
+        const newTask = new Task({ text });
+        await newTask.save();
+        res.status(201).json(newTask);
+    } catch (error) {
+        res.status(400).json({ message: 'Error creating task', error });
+    }
+});
+
+// PUT (Update) a task
+app.put('/api/tasks/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { text, completed } = req.body;
+        const updatedTask = await Task.findByIdAndUpdate(id, { text, completed }, { new: true });
+        if (!updatedTask) {
+            return res.status(404).json({ message: 'Task not found.' });
+        }
+        res.json(updatedTask);
+    } catch (error) {
+        res.status(400).json({ message: 'Error updating task', error });
+    }
+});
+
+// DELETE a task
+app.delete('/api/tasks/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedTask = await Task.findByIdAndDelete(id);
+        if (!deletedTask) {
+            return res.status(404).json({ message: 'Task not found.' });
+        }
+        res.json({ message: 'Task deleted successfully.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting task', error });
+    }
+});
+
+// GET all Pomodoro sessions
+app.get('/api/pomodoro/sessions', async (req, res) => {
+    try {
+        const sessions = await PomodoroSession.find().sort({ completedAt: 'desc' });
+        res.json(sessions);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching Pomodoro sessions', error });
+    }
+});
+
+// POST a new Pomodoro session
+app.post('/api/pomodoro/sessions', async (req, res) => {
+    try {
+        const { sessionType, duration } = req.body;
+        const newSession = new PomodoroSession({ sessionType, duration });
+        await newSession.save();
+        res.status(201).json(newSession);
+    } catch (error) {
+        res.status(400).json({ message: 'Error logging Pomodoro session', error });
+    }
+});
+
 
 // == Exams API (from before) ==
 app.get('/api/exams', async (req, res) => {

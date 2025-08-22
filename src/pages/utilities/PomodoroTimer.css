@@ -1,0 +1,158 @@
+/* --- Pomodoro Timer Styles --- */
+
+/* Main container for the timer and todo list */
+.pomodoro-page-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #2c2c2c; /* A slightly lighter shade for the card */
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* The timer itself */
+.pomodoro-container {
+    text-align: center;
+    padding: 2rem;
+    background-color: #333333;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.session-indicator {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #a9a9a9; /* Softer color */
+    margin-bottom: 0.5rem;
+}
+
+.timer-display {
+    font-size: 6rem;
+    font-weight: bold;
+    margin: 1rem 0;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.timer-controls .button, .timer-controls .timer-button {
+    margin: 0 0.5rem;
+}
+
+
+/* --- To-Do List Styles --- */
+.todo-list-container {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #333333;
+    border-radius: 8px;
+}
+
+.todo-list-container h3 {
+    margin-top: 0;
+    text-align: center;
+    color: #e0e0e0;
+}
+
+.todo-add-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.todo-add-form input {
+    flex-grow: 1;
+    padding: 0.75rem;
+    border-radius: 4px;
+    border: 1px solid #555;
+    background-color: #2a2a2a;
+    color: #fff;
+}
+
+.task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background-color: #2a2a2a;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    transition: background-color 0.2s;
+}
+
+.task-item:hover {
+    background-color: #3f3f3f;
+}
+
+.task-item.completed span {
+    text-decoration: line-through;
+    color: #888;
+}
+
+.task-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #c44545;
+}
+
+.task-item span {
+    flex-grow: 1;
+}
+
+.button-delete {
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 0.5rem;
+    line-height: 1;
+}
+.button-delete:hover {
+    color: #ff4757;
+}
+
+/* --- Statistics Page Styles --- */
+.stats-summary {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background-color: #2c2c2c;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    flex-basis: 200px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.stat-card h4 {
+    margin-top: 0;
+    color: #a9a9a9;
+}
+
+.stat-card p {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+.chart-container {
+    background-color: #2c2c2c;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.chart-container h3 {
+    text-align: center;
+    margin-top: 0;
+}

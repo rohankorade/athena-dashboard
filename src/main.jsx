@@ -30,6 +30,7 @@ import ResultsPage from './pages/ResultsPage.jsx';
 import SessionListPage from './pages/utilities/SessionListPage.jsx';
 import SessionAttemptsPage from './pages/utilities/SessionAttemptsPage.jsx';
 import RealTimeAnalysisPage from './pages/utilities/RealTimeAnalysisPage.jsx';
+import PomodoroStats from './pages/utilities/PomodoroStats.jsx';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -61,6 +62,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           {/* Nested routes for utilities, visible within the main app layout */}
           <Route path="utilities" element={<Utilities />} />
           <Route path="utilities/pomodoro-timer" element={<PomodoroTimer />} />
+          <Route path="utilities/pomodoro-stats" element={<PomodoroStats />} />
           <Route path="utilities/local-mock/setup" element={<AdminSetup />} />
           <Route path="utilities/local-mock/join" element={<JoinLobby />} />
           {/* This route is for the admin to view the lobby within the dashboard */}
