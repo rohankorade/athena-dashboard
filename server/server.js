@@ -408,12 +408,29 @@ io.on('connection', (socket) => {
     broadcastLobbyUpdate(sessionId);
   });
 
+  socket.on('admin_join_session', async ({ sessionId, username }) => {
+    // Adds the admin as a participant, defaulting them to "Ready"
+    await MockExamSession.findByIdAndUpdate(sessionId, {
+        $push: { participants: { username, isReady: true } }
+    });
+    socket.username = username; // Associate the username with the admin's socket
+    broadcastLobbyUpdate(sessionId);
+  });
+
+  socket.on('admin_leave_session', async ({ sessionId, username }) => {
+    // Removes the admin from the participant list
+    await MockExamSession.findByIdAndUpdate(sessionId, {
+        $pull: { participants: { username } }
+    });
+    socket.username = undefined; // Disassociate the username
+    broadcastLobbyUpdate(sessionId);
+  });
+
   socket.on('start_exam', async (sessionId) => {
     try {
         const session = await MockExamSession.findById(sessionId);
         if (!session || activeExamTimers[sessionId]) { return; }
 
-        // Mark the session as active
         session.status = 'active';
         await session.save();
         broadcastLobbyUpdate(sessionId);
@@ -426,7 +443,7 @@ io.on('connection', (socket) => {
         }));
 
         const startTime = new Date();
-        const timeLimit = session.timeLimit; // Use timeLimit from session
+        const timeLimit = session.timeLimit;
 
         const createdAttempts = await Promise.all(
             session.participants.map(participant => {
@@ -441,35 +458,33 @@ io.on('connection', (socket) => {
                 return newAttempt.save();
             })
         );
-
+        
+        // Create a map of usernames to their new attempt IDs
         const attemptMap = Object.fromEntries(createdAttempts.map(a => [a.username, a._id]));
-        const socketsInRoom = await io.in(sessionId).fetchSockets();
-        for (const sock of socketsInRoom) {
-            const userAttemptId = attemptMap[sock.username];
-            if (userAttemptId) {
-                sock.emit('exam_started', { attemptId: userAttemptId });
-            }
-        }
+        // Broadcast this map to everyone in the lobby
+        io.to(sessionId).emit('exam_started_for_all', { attemptMap });
 
         // Set a timeout to auto-submit all exams when the session time limit is reached
         const sessionTimer = setTimeout(async () => {
             console.log(`Session ${sessionId} time limit reached. Auto-submitting all attempts.`);
             const attemptsToSubmit = await MockExamAttempt.find({ examSession: sessionId, isCompleted: false });
+            
+            // We need to fetch sockets again here in case they changed
+            const socketsInRoom = await io.in(sessionId).fetchSockets();
             for (const attempt of attemptsToSubmit) {
-                // Find the socket for the user to emit 'exam_finished' event
                 const userSocket = socketsInRoom.find(s => s.username === attempt.username);
                 await submitExamAttempt(attempt._id, userSocket);
             }
-            // Clean up
+
             if (activeExamTimers[sessionId]) {
                 clearInterval(activeExamTimers[sessionId].tickTimer);
                 delete activeExamTimers[sessionId];
             }
-            // Mark session as finished
+            
             session.status = 'finished';
             await session.save();
             broadcastLobbyUpdate(sessionId);
-        }, timeLimit * 1000); // Convert seconds to milliseconds
+        }, timeLimit * 1000);
 
         // Interval for broadcasting remaining time
         const tickTimer = setInterval(() => {

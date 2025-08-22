@@ -438,6 +438,18 @@ a.button:hover {
   background-color: #27ae60; /* Darker Green */
 }
 
+.button-modern-green:disabled {
+  background-color: #ccc;   /* Greyed out look */
+  color: #666;             /* Muted text */
+  cursor: not-allowed;     /* Show blocked cursor */
+  opacity: 0.6;            /* Slight transparency */
+}
+.button-modern-green:not(:disabled):hover {
+  background-color: #28a745; /* Brighter green on hover */
+}
+
+
+
 /* ☁️ Modern Gray */
 .button-modern-gray {
   background-color: #bdc3c7; /* Flat Gray */
@@ -1720,4 +1732,9 @@ p.time-taken strong {
   background-color: #0069d9;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Custom Styles */
+.custom-margin-right{
+  margin-right: 1rem;
 }
