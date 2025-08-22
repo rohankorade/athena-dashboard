@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 function AdminSetup() {
   const [collections, setCollections] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState('');
+  const [timeLimit, setTimeLimit] = useState(7200); // Default time in minutes
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -28,7 +29,10 @@ function AdminSetup() {
     const response = await fetch('http://localhost:5000/api/mocks/create-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ collectionName: selectedCollection }),
+      body: JSON.stringify({
+        collectionName: selectedCollection,
+        timeLimit: timeLimit // Send time limit in minutes
+      }),
     });
     const sessionData = await response.json();
 
@@ -57,6 +61,16 @@ function AdminSetup() {
         >
           {collections.map(name => <option key={name} value={name}>{name}</option>)}
         </select>
+
+        <label htmlFor="time-limit-input">Set Time Limit (minutes):</label>
+        <input
+          id="time-limit-input"
+          type="number"
+          value={timeLimit}
+          onChange={e => setTimeLimit(e.target.value)}
+          className="time-limit-input"
+        />
+
         <button onClick={handleCreateLobby} className="button button-primary">
           Create Lobby
         </button>

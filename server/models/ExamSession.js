@@ -11,6 +11,10 @@ const examSessionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  timeLimit: {
+    type: Number, // in seconds
+    default: 432000
+  },
   status: {
     type: String,
     enum: ['lobby', 'active', 'finished'],
