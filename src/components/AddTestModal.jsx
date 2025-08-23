@@ -24,7 +24,6 @@ function AddTestModal({ isOpen, onRequestClose, onTestAdded, seriesList, selecte
 
   // Auto-calculated fields
   const [attempted, setAttempted] = useState(0);
-  const totalQuestions = 100;
 
   // Update calculated fields whenever correct/incorrect counts change
   useEffect(() => {
@@ -41,6 +40,7 @@ function AddTestModal({ isOpen, onRequestClose, onTestAdded, seriesList, selecte
     const payload = {
       series: currentSeries,
       testNumber,
+      subject, // Make sure to include subject in the payload
       dateTaken,
       questionsCorrect,
       questionsIncorrect,
@@ -48,17 +48,28 @@ function AddTestModal({ isOpen, onRequestClose, onTestAdded, seriesList, selecte
     };
 
     try {
+      // Get the token from localStorage
+      const token = localStorage.getItem('authToken');
+
       const response = await fetch('http://localhost:5000/api/tests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Add the Authorization header
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
 
       if (response.ok) {
         onTestAdded();
         onRequestClose();
-      } else { console.error('Failed to add test'); }
-    } catch (error) { console.error('Error:', error); }
+      } else {
+        console.error('Failed to add test');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
   };
 
   return (

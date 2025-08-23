@@ -15,7 +15,7 @@ function Editorials() {
   const [notes, setNotes] = useState([]);
 
   // State for the drill-down navigation
-  const [viewLevel, setViewLevel] = useState('years'); // 'years', 'months', or 'days'
+  const [viewLevel, setViewLevel] = useState('years');
   const [selectedYear, setSelectedYear] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(null);
 
@@ -25,27 +25,33 @@ function Editorials() {
 
   // --- State for Search Mode ---
   const [searchTerms, setSearchTerms] = useState([]);
-  const [searchMode, setSearchMode] = useState('OR'); // 'OR' or 'AND'
+  const [searchMode, setSearchMode] = useState('OR');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
 
   const fetchDashboardData = () => {
+    const token = localStorage.getItem('authToken');
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     // Fetch Stats
-    fetch('http://localhost:5000/api/editorials/stats')
+    fetch('http://localhost:5000/api/editorials/stats', { headers })
       .then(res => res.json())
       .then(data => setStats(data));
+      
     // Fetch Next to Read
-    fetch('http://localhost:5000/api/editorials/next-to-read')
+    fetch('http://localhost:5000/api/editorials/next-to-read', { headers })
       .then(res => res.json())
       .then(data => setNextToRead(data));
   };
 
   // Fetch the initial date tree on component mount
   useEffect(() => {
-    fetch('http://localhost:5000/api/editorials/dates')
+    const token = localStorage.getItem('authToken');
+    fetch('http://localhost:5000/api/editorials/dates', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(res => res.json())
       .then(data => {
-        // Convert the API's array response into a more easily searchable object
         const treeObject = data.reduce((acc, yearData) => {
           acc[yearData._id] = yearData.months.reduce((monthAcc, monthData) => {
             monthAcc[monthData.month] = monthData.days.sort((a, b) => a - b);
@@ -55,39 +61,39 @@ function Editorials() {
         }, {});
         setDateTree(treeObject);
       });
-    // Fetch all dashboard data
     fetchDashboardData();
   }, []);
 
-  // Handler for selecting a day to fetch notes
-  const handleDaySelect = (day) => {
-    setSelectedDate({ year: selectedYear, month: selectedMonth, day: day });
-  };
-
-  // This useEffect hook runs EVERY TIME 'selectedDate' changes,
-  // triggering the network call to fetch the notes for that day.
+  // Fetch notes for the selected day
   useEffect(() => {
     if (selectedDate) {
       const { year, month, day } = selectedDate;
-      fetch(`http://localhost:5000/api/editorials/by-date?year=${year}&month=${month}&day=${day}`)
+      const token = localStorage.getItem('authToken');
+      fetch(`http://localhost:5000/api/editorials/by-date?year=${year}&month=${month}&day=${day}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
         .then(res => res.json())
         .then(data => setNotes(data));
     } else {
-      setNotes([]); // Clear notes if no date is selected
+      setNotes([]);
     }
-  }, [selectedDate]); // The dependency array ensures this runs when 'selectedDate' changes
+  }, [selectedDate]);
 
   // Handler for the "Mark as Read/Unread" toggle
   const toggleReadStatus = async (id, newStatus) => {
+    const token = localStorage.getItem('authToken');
     const response = await fetch(`http://localhost:5000/api/editorials/${id}/status`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ isRead: newStatus }),
     });
     if (response.ok) {
         const updatedNote = await response.json();
         setNotes(notes.map(n => n._id === id ? updatedNote : n));
-        fetchDashboardData(); // Refresh stats and next-to-read
+        fetchDashboardData();
     }
   };
   
@@ -103,7 +109,7 @@ function Editorials() {
   const renderDays = () => dateTree[selectedYear][selectedMonth].map(day => (
     <li 
       key={day} 
-      onClick={() => handleDaySelect(day)}
+      onClick={() => setSelectedDate({ year: selectedYear, month: selectedMonth, day: day })}
       className={selectedDate?.day === day ? 'active-day' : ''}
     >
       {day}
@@ -115,11 +121,12 @@ function Editorials() {
     if (searchTerms.length === 0) return;
     setIsSearching(true);
     const termsQuery = searchTerms.join(',');
-    console.log("Searching for terms:", termsQuery, "with mode:", searchMode); // Log the search terms and mode
-    // Make the API call to search editorials
-    const response = await fetch(`http://localhost:5000/api/editorials/search?terms=${termsQuery}&mode=${searchMode}`);
+    const token = localStorage.getItem('authToken');
+    
+    const response = await fetch(`http://localhost:5000/api/editorials/search?terms=${termsQuery}&mode=${searchMode}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     const data = await response.json();
-    console.log("Received search data:", data); // Log the received data
     setSearchResults(data);
   };
 
@@ -146,7 +153,7 @@ function Editorials() {
         {isSearching ? (
           <main className="right-column full-width">
             <h3>Search Results ({searchResults.length})</h3>
-            {searchResults.map(note => <NoteListItem key={note._id} note={note} onToggleRead={() => {}} />)}
+            {searchResults.map(note => <NoteListItem key={note._id} note={note} onToggleRead={toggleReadStatus} />)}
           </main>
         ) : (
           <>

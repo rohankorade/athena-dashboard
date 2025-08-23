@@ -26,8 +26,23 @@ function ExamCountdown() {
     // This function fetches the data from our backend
     const fetchExams = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/exams');
+        // Get the token from localStorage
+        const token = localStorage.getItem('authToken');
+
+        const response = await fetch('http://localhost:5000/api/exams', {
+          headers: {
+            // Add the Authorization header
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
         if (!response.ok) {
+          // If the token is invalid or expired, the server will send a 401 error
+          if (response.status === 401) {
+            // Here you could redirect to the login page
+            // For now, we'll just throw an error
+            throw new Error('Not authorized. Please log in again.');
+          }
           throw new Error('Network response was not ok');
         }
         const data = await response.json();

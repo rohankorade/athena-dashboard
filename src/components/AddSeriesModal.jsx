@@ -27,9 +27,16 @@ function AddSeriesModal({ isOpen, onRequestClose, onSeriesAdded }) {
     if (!seriesName.trim()) return;
 
     try {
+      // Get the token from localStorage
+      const token = localStorage.getItem('authToken');
+
       const response = await fetch('http://localhost:5000/api/test-series', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Add the Authorization header
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ name: seriesName }),
       });
 
@@ -37,8 +44,13 @@ function AddSeriesModal({ isOpen, onRequestClose, onSeriesAdded }) {
         setSeriesName(''); // Clear input on success
         onSeriesAdded();
         onRequestClose();
-      } else { console.error('Failed to add series'); }
-    } catch (error) { console.error('Error:', error); }
+      } else {
+        console.error('Failed to add series');
+        // Optionally, handle token errors, e.g., by redirecting to login
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
   };
 
   return (

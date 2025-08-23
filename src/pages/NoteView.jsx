@@ -10,7 +10,15 @@ function NoteView() {
 
   useEffect(() => {
     if (noteId) {
-      fetch(`http://localhost:5000/api/editorials/${noteId}`)
+      // Get the token from localStorage
+      const token = localStorage.getItem('authToken');
+
+      fetch(`http://localhost:5000/api/editorials/${noteId}`, {
+        headers: {
+          // Add the Authorization header
+          'Authorization': `Bearer ${token}`
+        }
+      })
         .then(res => res.json())
         .then(data => setNote(data));
     }

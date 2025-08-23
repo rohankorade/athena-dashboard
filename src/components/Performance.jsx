@@ -19,7 +19,12 @@ function Performance() {
   // Fetch all test series
   const fetchSeries = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/test-series');
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('http://localhost:5000/api/test-series', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       setSeriesList(data);
       // If a series isn't selected yet, default to the first one
@@ -33,7 +38,14 @@ function Performance() {
   const fetchTests = async () => {
     if (!selectedSeries) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/tests/${selectedSeries}`);
+      // Get the token from localStorage
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`http://localhost:5000/api/tests/${selectedSeries}`, {
+        headers: {
+          // Add the Authorization header
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       setTests(data);
     } catch (error) { console.error("Failed to fetch tests:", error); }

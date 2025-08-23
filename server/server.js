@@ -5,10 +5,12 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require("socket.io");
+const jwt = require('jsonwebtoken');
 
 // Importing the models
+const Auth = require('./models/Auth');
 const Note = require('./models/Note');
-const Exam = require('./models/Exam'); // Assuming Exam.js is now in models
+const Exam = require('./models/Exam');
 const TestSeries = require('./models/TestSeries');
 const Test = require('./models/Test');
 const ExamSessionSchema = require('./models/ExamSession');
@@ -18,8 +20,6 @@ const activeExamTimers = {};
 
 // --- Express App Setup ---
 const app = express();
-
-// Create an HTTP server and attach Socket.IO to it
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -31,6 +31,9 @@ const io = new Server(server, {
 // PORT Configuration
 const PORT = 5000;
 
+// --- A secret for signing JWTs ---
+const JWT_SECRET = "d8a7c4e6f1b9c2d4a7e6f3b1d9c8a4e7f5b2c1d8e6f7a9b3c2d5f1a7c8e9b2";
+
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
@@ -41,16 +44,172 @@ mongoose.connect(mongoURI)
     .then(() => console.log('MongoDB connected successfully.'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-// Get a connection to the localMocks DB and compile models on it
 const mockDb = mongoose.connection.useDb('localMocks', { useCache: true });
 const MockExamSession = mockDb.model('ExamSession', ExamSessionSchema);
 const MockExamAttempt = mockDb.model('ExamAttempt', ExamAttemptSchema);
 
 
-// --- API Routes ---
+// =================================================================
+// --- PUBLIC API ROUTES (No protection needed for these) ---
+// =================================================================
 
-// == Exams API (from before) ==
-app.get('/api/exams', async (req, res) => {
+// Login route is always public
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { key } = req.body;
+        if (!key) {
+            return res.status(400).json({ message: 'Auth key is required.' });
+        }
+        const authKey = await Auth.findOne();
+        if (!authKey || key !== authKey.key) {
+            return res.status(401).json({ message: 'Invalid auth key.' });
+        }
+        const token = jwt.sign({ user: 'admin' }, JWT_SECRET, { expiresIn: '365d' });
+        res.json({ token });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error during login', error });
+    }
+});
+
+// All routes for the local mock exam feature must be public
+app.get('/api/mocks/collections', async (req, res) => {
+    try {
+        const questionDb = mongoose.connection.useDb('mockPapers');
+        const collections = await questionDb.db.listCollections().toArray();
+        const collectionNames = collections.map(c => c.name);
+        res.json(collectionNames);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching collections', error });
+    }
+});
+
+app.get('/api/mocks/collections/:collectionName/details', async (req, res) => {
+    try {
+        const { collectionName } = req.params;
+        const questionDb = mongoose.connection.useDb('mockPapers');
+        const totalQuestions = await questionDb.db.collection(collectionName).countDocuments();
+        res.json({ totalQuestions });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching collection details', error });
+    }
+});
+
+app.get('/api/mocks/sessions', async (req, res) => {
+    try {
+        const sessions = await MockExamSession.find().sort({ createdAt: -1 });
+        res.json(sessions);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching sessions', error });
+    }
+});
+
+app.get('/api/mocks/sessions/:sessionId/attempts', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const attempts = await MockExamAttempt.find({ examSession: sessionId }).sort({ createdAt: -1 });
+        res.json(attempts);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching attempts for session', error });
+    }
+});
+
+app.post('/api/mocks/create-session', async (req, res) => {
+    try {
+        const { collectionName, timeLimit, totalQuestions, maxMarks, negativeMarking } = req.body;
+        if (!collectionName) {
+            return res.status(400).json({ message: 'Collection name is required.' });
+        }
+        const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const sessionData = {
+            sessionCode,
+            examCollectionName: collectionName,
+            totalQuestions,
+            maxMarks,
+            negativeMarking
+        };
+        if (timeLimit) {
+            sessionData.timeLimit = timeLimit * 60;
+        }
+        const newSession = new MockExamSession(sessionData);
+        await newSession.save();
+        res.status(201).json(newSession);
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating session', error });
+    }
+});
+
+app.get('/api/mocks/session-by-code/:code', async (req, res) => {
+    try {
+        const session = await MockExamSession.findOne({ sessionCode: req.params.code });
+        if (!session) { return res.status(404).json({ message: "Session not found." }); }
+        res.json(session);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching session', error });
+    }
+});
+
+app.get('/api/exam-questions/:collectionName', async (req, res) => {
+    try {
+        const { collectionName } = req.params;
+        const questionDb = mongoose.connection.useDb('mockPapers');
+        const questions = await questionDb.db.collection(collectionName).find({}).toArray();
+        res.json(questions);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching exam questions', error });
+    }
+});
+
+app.get('/api/exam-attempt/:attemptId', async (req, res) => {
+    try {
+        const { attemptId } = req.params;
+        const attempt = await MockExamAttempt.findById(attemptId).populate('examSession');
+        if (!attempt) { return res.status(404).json({ message: "Exam attempt not found." }); }
+        res.json(attempt);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching exam attempt', error });
+    }
+});
+
+
+// =================================================================
+// --- Authentication Middleware (The Gatekeeper) ---
+// =================================================================
+const protect = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        jwt.verify(token, JWT_SECRET, (err, decoded) => {
+            if (err) {
+                return res.status(401).json({ message: 'Not authorized, token failed.' });
+            }
+            next();
+        });
+    } else {
+        res.status(401).json({ message: 'Not authorized, no token.' });
+    }
+};
+
+// =================================================================
+// --- PROTECTED API ROUTES (Apply the 'protect' middleware) ---
+// =================================================================
+
+// Create routers for each group of protected routes
+const examRouter = express.Router();
+const testSeriesRouter = express.Router();
+const testRouter = express.Router();
+const editorialRouter = express.Router();
+
+// Apply the middleware to these routers
+app.use('/api/exams', protect, examRouter);
+app.use('/api/test-series', protect, testSeriesRouter);
+app.use('/api/tests', protect, testRouter);
+app.use('/api/editorials', protect, editorialRouter);
+
+
+// --- Protected API Route Handlers ---
+
+// == Exams API ==
+examRouter.get('/', async (req, res) => {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -62,8 +221,7 @@ app.get('/api/exams', async (req, res) => {
 });
 
 // == Test Series API ==
-// GET all test series
-app.get('/api/test-series', async (req, res) => {
+testSeriesRouter.get('/', async (req, res) => {
     try {
         const series = await TestSeries.find().sort({ name: 'asc' });
         res.json(series);
@@ -72,8 +230,7 @@ app.get('/api/test-series', async (req, res) => {
     }
 });
 
-// POST a new test series
-app.post('/api/test-series', async (req, res) => {
+testSeriesRouter.post('/', async (req, res) => {
     try {
         const newSeries = new TestSeries({ name: req.body.name });
         await newSeries.save();
@@ -84,8 +241,7 @@ app.post('/api/test-series', async (req, res) => {
 });
 
 // == Tests API ==
-// GET all tests for a specific series
-app.get('/api/tests/:seriesId', async (req, res) => {
+testRouter.get('/:seriesId', async (req, res) => {
     try {
         const tests = await Test.find({ series: req.params.seriesId }).sort({ testNumber: 'asc' });
         res.json(tests);
@@ -94,15 +250,12 @@ app.get('/api/tests/:seriesId', async (req, res) => {
     }
 });
 
-// POST a new test score
-app.post('/api/tests', async (req, res) => {
+testRouter.post('/', async (req, res) => {
     try {
         const { series, testNumber, dateTaken, questionsCorrect, questionsIncorrect, marksScored, subject } = req.body;
-
         const correct = parseInt(questionsCorrect);
         const incorrect = parseInt(questionsIncorrect);
-        const totalQuestions = 100; // Assuming 100 for now
-        
+        const totalQuestions = 100;
         const attempted = correct + incorrect;
         const unattempted = totalQuestions - attempted;
 
@@ -120,9 +273,8 @@ app.post('/api/tests', async (req, res) => {
     }
 });
 
-
-// GET a structured list of dates for the explorer
-app.get('/api/editorials/dates', async (req, res) => {
+// == Editorials API ==
+editorialRouter.get('/dates', async (req, res) => {
     try {
         const dateTree = await Note.aggregate([
             { $match: { "frontmatter.date": { $exists: true, $type: "date" } } },
@@ -138,14 +290,12 @@ app.get('/api/editorials/dates', async (req, res) => {
     }
 });
 
-// GET all editorials for a specific date
-app.get('/api/editorials/by-date', async (req, res) => {
+editorialRouter.get('/by-date', async (req, res) => {
     try {
         const { year, month, day } = req.query;
         const startDate = new Date(year, month - 1, day);
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + 1);
-
         const notes = await Note.find({ "frontmatter.date": { $gte: startDate, $lt: endDate } });
         res.json(notes);
     } catch (error) {
@@ -153,46 +303,7 @@ app.get('/api/editorials/by-date', async (req, res) => {
     }
 });
 
-// PATCH to update the isRead status of a note
-app.patch('/api/editorials/:id/status', async (req, res) => {
-    try {
-        const { isRead } = req.body;
-        const updatedNote = await Note.findByIdAndUpdate(req.params.id, { isRead: isRead }, { new: true });
-        res.json(updatedNote);
-    } catch (error) {
-        res.status(400).json({ message: 'Error updating note status', error });
-    }
-});
-
-// --- ADD THIS NEW DEBUG ROUTE ---
-app.get('/api/editorials/debug-one', async (req, res) => {
-    try {
-        const oneNote = await Note.findOne();
-        if (!oneNote) { return res.status(404).json({ message: "No documents found in the editorials collection." }); }
-        console.log("--- DEBUG: ONE NOTE ---");
-        console.log(oneNote);
-        console.log("-----------------------");
-        res.json(oneNote);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching debug note', error });
-    }
-});
-
-// Add this new debug route to server.js
-app.get('/api/editorials/debug-by-path', async (req, res) => {
-    try {
-        const filePath = req.query.path;
-        if (!filePath) { return res.status(400).json({ message: "Please provide a 'path' query parameter." }); }
-        const note = await Note.findOne({ filePath: { $regex: filePath, $options: 'i' } });
-        if (!note) { return res.status(404).json({ message: "Note not found containing that file path." }); }
-        res.json(note);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching debug note', error });
-    }
-});
-
-// GET all statistics for the editorials page
-app.get('/api/editorials/stats', async (req, res) => {
+editorialRouter.get('/stats', async (req, res) => {
     try {
         const cspExam = await Exam.findById('68a4bfe9adb3d434faf2c939');
         let daysToCSP = 'N/A';
@@ -216,7 +327,7 @@ app.get('/api/editorials/stats', async (req, res) => {
     }
 });
 
-app.get('/api/editorials/next-to-read', async (req, res) => {
+editorialRouter.get('/next-to-read', async (req, res) => {
     try {
         const nextNote = await Note.findOne({ isRead: false }).sort({ "frontmatter.date": 1 });
         res.json(nextNote);
@@ -225,8 +336,7 @@ app.get('/api/editorials/next-to-read', async (req, res) => {
     }
 });
 
-// GET endpoint for advanced, unified search
-app.get('/api/editorials/search', async (req, res) => {
+editorialRouter.get('/search', async (req, res) => {
     try {
         const { terms = '', mode = 'OR' } = req.query;
         if (!terms.trim()) { return res.json([]); }
@@ -249,8 +359,17 @@ app.get('/api/editorials/search', async (req, res) => {
     }
 });
 
-// GET a single note by its ID
-app.get('/api/editorials/:id', async (req, res) => {
+editorialRouter.patch('/:id/status', async (req, res) => {
+    try {
+        const { isRead } = req.body;
+        const updatedNote = await Note.findByIdAndUpdate(req.params.id, { isRead: isRead }, { new: true });
+        res.json(updatedNote);
+    } catch (error) {
+        res.status(400).json({ message: 'Error updating note status', error });
+    }
+});
+
+editorialRouter.get('/:id', async (req, res) => {
     try {
         const note = await Note.findById(req.params.id);
         if (!note) { return res.status(404).json({ message: "Note not found" }); }
@@ -260,120 +379,6 @@ app.get('/api/editorials/:id', async (req, res) => {
     }
 });
 
-// LOCAL MOCK APIs
-
-// GET all available question paper collections from the 'mockPapers' db
-app.get('/api/mocks/collections', async (req, res) => {
-    try {
-        const questionDb = mongoose.connection.useDb('mockPapers');
-        const collections = await questionDb.db.listCollections().toArray();
-        const collectionNames = collections.map(c => c.name);
-        res.json(collectionNames);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching collections', error });
-    }
-});
-
-// GET total questions for a specific collection
-app.get('/api/mocks/collections/:collectionName/details', async (req, res) => {
-    try {
-        const { collectionName } = req.params;
-        const questionDb = mongoose.connection.useDb('mockPapers');
-        const totalQuestions = await questionDb.db.collection(collectionName).countDocuments();
-        res.json({ totalQuestions });
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching collection details', error });
-    }
-});
-
-// GET all exam sessions
-app.get('/api/mocks/sessions', async (req, res) => {
-    try {
-        const sessions = await MockExamSession.find().sort({ createdAt: -1 });
-        res.json(sessions);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching sessions', error });
-    }
-});
-
-// GET all attempts for a specific session
-app.get('/api/mocks/sessions/:sessionId/attempts', async (req, res) => {
-    try {
-        const { sessionId } = req.params;
-        const attempts = await MockExamAttempt.find({ examSession: sessionId }).sort({ createdAt: -1 });
-        res.json(attempts);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching attempts for session', error });
-    }
-});
-
-// POST to create a new exam session (lobby)
-app.post('/api/mocks/create-session', async (req, res) => {
-    try {
-        const { collectionName, timeLimit, totalQuestions, maxMarks, negativeMarking } = req.body;
-        if (!collectionName) {
-            return res.status(400).json({ message: 'Collection name is required.' });
-        }
-
-        const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-        // Prepare session data, including the new fields
-        const sessionData = {
-            sessionCode,
-            examCollectionName: collectionName,
-            totalQuestions,
-            maxMarks,
-            negativeMarking
-        };
-
-        // If a time limit is provided, convert it from minutes to seconds and add it
-        if (timeLimit) {
-            sessionData.timeLimit = timeLimit * 60;
-        }
-
-        const newSession = new MockExamSession(sessionData);
-        await newSession.save();
-        res.status(201).json(newSession);
-    } catch (error) {
-        res.status(500).json({ message: 'Error creating session', error });
-    }
-});
-
-// GET a session by its short code
-app.get('/api/mocks/session-by-code/:code', async (req, res) => {
-    try {
-        const session = await MockExamSession.findOne({ sessionCode: req.params.code });
-        if (!session) { return res.status(404).json({ message: "Session not found." }); }
-        res.json(session);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching session', error });
-    }
-});
-
-// GET all questions for a given exam collection
-app.get('/api/exam-questions/:collectionName', async (req, res) => {
-    try {
-        const { collectionName } = req.params;
-        const questionDb = mongoose.connection.useDb('mockPapers');
-        const questions = await questionDb.db.collection(collectionName).find({}).toArray();
-        res.json(questions);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching exam questions', error });
-    }
-});
-
-// GET a specific exam attempt by its ID
-app.get('/api/exam-attempt/:attemptId', async (req, res) => {
-    try {
-        const { attemptId } = req.params;
-        // Populate the examSession to get access to its scoring details
-        const attempt = await MockExamAttempt.findById(attemptId).populate('examSession');
-        if (!attempt) { return res.status(404).json({ message: "Exam attempt not found." }); }
-        res.json(attempt);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching exam attempt', error });
-    }
-});
 
 // --- REAL-TIME LOGIC with Socket.io ---
 io.on('connection', (socket) => {
@@ -409,20 +414,18 @@ io.on('connection', (socket) => {
   });
 
   socket.on('admin_join_session', async ({ sessionId, username }) => {
-    // Adds the admin as a participant, defaulting them to "Ready"
     await MockExamSession.findByIdAndUpdate(sessionId, {
         $push: { participants: { username, isReady: true } }
     });
-    socket.username = username; // Associate the username with the admin's socket
+    socket.username = username;
     broadcastLobbyUpdate(sessionId);
   });
 
   socket.on('admin_leave_session', async ({ sessionId, username }) => {
-    // Removes the admin from the participant list
     await MockExamSession.findByIdAndUpdate(sessionId, {
         $pull: { participants: { username } }
     });
-    socket.username = undefined; // Disassociate the username
+    socket.username = undefined;
     broadcastLobbyUpdate(sessionId);
   });
 
@@ -459,17 +462,13 @@ io.on('connection', (socket) => {
             })
         );
         
-        // Create a map of usernames to their new attempt IDs
         const attemptMap = Object.fromEntries(createdAttempts.map(a => [a.username, a._id]));
-        // Broadcast this map to everyone in the lobby
         io.to(sessionId).emit('exam_started_for_all', { attemptMap });
 
-        // Set a timeout to auto-submit all exams when the session time limit is reached
         const sessionTimer = setTimeout(async () => {
             console.log(`Session ${sessionId} time limit reached. Auto-submitting all attempts.`);
             const attemptsToSubmit = await MockExamAttempt.find({ examSession: sessionId, isCompleted: false });
             
-            // We need to fetch sockets again here in case they changed
             const socketsInRoom = await io.in(sessionId).fetchSockets();
             for (const attempt of attemptsToSubmit) {
                 const userSocket = socketsInRoom.find(s => s.username === attempt.username);
@@ -486,7 +485,6 @@ io.on('connection', (socket) => {
             broadcastLobbyUpdate(sessionId);
         }, timeLimit * 1000);
 
-        // Interval for broadcasting remaining time
         const tickTimer = setInterval(() => {
             const now = new Date();
             const elapsedSeconds = Math.floor((now - startTime) / 1000);
@@ -519,7 +517,6 @@ io.on('connection', (socket) => {
             { $set: { "answers.$.selected_option_index": selected_option_index, "answers.$.status": status }}
         );
 
-        // After updating, fetch the entire attempt and broadcast it to the watch room
         const updatedAttempt = await MockExamAttempt.findById(attemptId);
         if (updatedAttempt) {
             const roomName = `attempt-room-${attemptId}`;
@@ -531,17 +528,14 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Refactored submission logic into a reusable function
   const submitExamAttempt = async (attemptId, socket) => {
     try {
       const attempt = await MockExamAttempt.findById(attemptId);
       if (!attempt || attempt.isCompleted) { return; }
 
-      // Fetch the session to get scoring details
       const session = await MockExamSession.findById(attempt.examSession);
       if (!session) {
           console.error(`Could not find session ${attempt.examSession} for attempt ${attemptId}`);
-          // Simple fallback to prevent crash, though this should ideally not happen
           return;
       }
 
@@ -560,7 +554,6 @@ io.on('connection', (socket) => {
           if (question && userAnswerAsString === question.correct_answer) {
             score += marksPerCorrectAnswer;
           } else {
-            // Only apply negative marking if it's a wrong answer, not just unattempted
             score -= negativeMarking;
           }
         }
@@ -571,12 +564,9 @@ io.on('connection', (socket) => {
       attempt.submittedAt = new Date();
       await attempt.save();
 
-      // If a socket is provided, emit the finished event to that specific user
       if (socket) {
         socket.emit('exam_finished', { attemptId: attempt._id });
       } else {
-        // If no socket (e.g. server-side submission), we can broadcast if needed,
-        // but for now, we'll just log it. A specific user event is better.
         console.log(`Attempt ${attempt._id} submitted by server.`);
       }
 
@@ -593,6 +583,7 @@ io.on('connection', (socket) => {
     console.log('A user disconnected:', socket.id);
   });
 });
+
 
 // Start the Server
 server.listen(PORT, "0.0.0.0", () => {
