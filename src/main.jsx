@@ -29,6 +29,9 @@ import ResultsPage from './pages/ResultsPage.jsx';
 import SessionListPage from './pages/utilities/SessionListPage.jsx';
 import SessionAttemptsPage from './pages/utilities/SessionAttemptsPage.jsx';
 import RealTimeAnalysisPage from './pages/utilities/RealTimeAnalysisPage.jsx';
+import PracticeTestList from './pages/utilities/practice/PracticeTestList.jsx';
+import PracticePage from './pages/utilities/practice/PracticePage.jsx';
+import PracticeResultPage from './pages/utilities/practice/PracticeResultPage.jsx';
 
 // Authentication
 import LoginPage from './pages/LoginPage.jsx';
@@ -64,6 +67,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="answer-writing" element={<AnswerWriting />} />
               {/* Nested routes for utilities */}
               <Route path="utilities" element={<Utilities />} />
+              <Route path="utilities/practice" element={<PracticeTestList />} />
+              <Route path="utilities/practice/attempt/:attemptId" element={<PracticePage />} />
+              <Route path="utilities/practice/results/:attemptId" element={<PracticeResultPage />} />
               <Route path="utilities/pomodoro-timer" element={<PomodoroTimer />} />
               <Route path="utilities/local-mock/setup" element={<AdminSetup />} />
               <Route path="utilities/local-mock/join" element={<JoinLobby />} />

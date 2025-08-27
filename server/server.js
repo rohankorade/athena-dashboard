@@ -15,28 +15,26 @@ const TestSeries = require('./models/TestSeries');
 const Test = require('./models/Test');
 const ExamSessionSchema = require('./models/ExamSession');
 const ExamAttemptSchema = require('./models/ExamAttempt');
-
-const activeExamTimers = {};
+const PracticeAttemptSchema = require('./models/PracticeAttempt');
 
 // --- Express App Setup ---
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Your React app's address
+    origin: "*", 
     methods: ["GET", "POST"]
   }
 });
 
 // PORT Configuration
 const PORT = 5000;
-
-// --- A secret for signing JWTs ---
 const JWT_SECRET = "d8a7c4e6f1b9c2d4a7e6f3b1d9c8a4e7f5b2c1d8e6f7a9b3c2d5f1a7c8e9b2";
 
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
 // --- MongoDB Connection ---
 const mongoURI = 'mongodb://localhost:27017/upscDashboard';
@@ -44,16 +42,20 @@ mongoose.connect(mongoURI)
     .then(() => console.log('MongoDB connected successfully.'))
     .catch(err => console.error('MongoDB connection error:', err));
 
+// Create separate DB connections for better organization
 const mockDb = mongoose.connection.useDb('localMocks', { useCache: true });
+const practiceDb = mongoose.connection.useDb('practiceDB', { useCache: true });
+
+// Register models on their respective DBs
 const MockExamSession = mockDb.model('ExamSession', ExamSessionSchema);
 const MockExamAttempt = mockDb.model('ExamAttempt', ExamAttemptSchema);
+const PracticeAttempt = mockDb.model('PracticeAttempt', PracticeAttemptSchema);
 
 
 // =================================================================
 // --- PUBLIC API ROUTES (No protection needed for these) ---
 // =================================================================
-
-// Login route is always public
+// ... (all your existing public routes for login and local mocks remain unchanged)
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { key } = req.body;
@@ -71,7 +73,6 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// All routes for the local mock exam feature must be public
 app.get('/api/mocks/collections', async (req, res) => {
     try {
         const questionDb = mongoose.connection.useDb('mockPapers');
@@ -192,18 +193,18 @@ const protect = (req, res, next) => {
 // =================================================================
 // --- PROTECTED API ROUTES (Apply the 'protect' middleware) ---
 // =================================================================
-
-// Create routers for each group of protected routes
 const examRouter = express.Router();
 const testSeriesRouter = express.Router();
 const testRouter = express.Router();
 const editorialRouter = express.Router();
+const practiceRouter = express.Router();
 
-// Apply the middleware to these routers
+// Apply the middleware
 app.use('/api/exams', protect, examRouter);
 app.use('/api/test-series', protect, testSeriesRouter);
 app.use('/api/tests', protect, testRouter);
 app.use('/api/editorials', protect, editorialRouter);
+app.use('/api/practice', protect, practiceRouter);
 
 
 // --- Protected API Route Handlers ---
@@ -380,10 +381,87 @@ editorialRouter.get('/:id', async (req, res) => {
 });
 
 
+// --- Practice API Routes ---
+practiceRouter.get('/tests', async (req, res) => {
+    try {
+        const collections = await practiceDb.db.listCollections().toArray();
+        const collectionNames = collections.map(c => c.name);
+        res.json(collectionNames);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching practice tests', error });
+    }
+});
+
+practiceRouter.get('/questions/:collectionName', async (req, res) => {
+    try {
+        const { collectionName } = req.params;
+        const questions = await practiceDb.db.collection(collectionName).find({}).sort({ question_number: 1 }).toArray();
+        res.json(questions);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching practice questions', error });
+    }
+});
+
+practiceRouter.post('/create-attempt', async (req, res) => {
+    try {
+        const { username, collectionName } = req.body;
+        const questions = await practiceDb.db.collection(collectionName).find({}, { projection: { question_number: 1 } }).sort({ question_number: 1 }).toArray();
+
+        const initialAnswers = questions.map(q => ({
+            question_number: q.question_number,
+            status: 'unanswered',
+        }));
+        
+        const newAttempt = new PracticeAttempt({
+            username,
+            practiceTestCollection: collectionName,
+            answers: initialAnswers,
+        });
+
+        await newAttempt.save();
+        res.status(201).json(newAttempt);
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating practice attempt', error });
+    }
+});
+
+// This route gets a specific practice attempt by its ID
+practiceRouter.get('/attempt/:id', async (req, res) => {
+    try {
+        const attempt = await PracticeAttempt.findById(req.params.id);
+        if (!attempt) {
+            return res.status(404).json({ message: 'Practice attempt not found' });
+        }
+        res.json(attempt);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching practice attempt', error });
+    }
+});
+
+// This route marks a practice attempt as completed
+practiceRouter.patch('/attempt/:id/finish', async (req, res) => {
+    try {
+        const attempt = await PracticeAttempt.findByIdAndUpdate(
+            req.params.id,
+            { isCompleted: true },
+            { new: true } // This option returns the updated document
+        );
+        if (!attempt) {
+            return res.status(404).json({ message: 'Practice attempt not found' });
+        }
+        res.json(attempt);
+    } catch (error) {
+        res.status(500).json({ message: 'Error finishing practice attempt', error });
+    }
+});
+
+
 // --- REAL-TIME LOGIC with Socket.io ---
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
-
+  
+  const activeExamTimers = {};
+  
   const broadcastLobbyUpdate = async (sessionId) => {
     const updatedSession = await MockExamSession.findById(sessionId);
     if (updatedSession) {
@@ -578,6 +656,39 @@ io.on('connection', (socket) => {
   socket.on('submit_exam', async ({ attemptId }) => {
       await submitExamAttempt(attemptId, socket);
   });
+
+
+  // --- Socket.io logic for Practice Mode ---
+  socket.on('practice_update_answer', async ({ attemptId, question_number, status, selected_option_index, timeTaken }) => {
+    try {
+        await PracticeAttempt.updateOne(
+            { _id: attemptId, "answers.question_number": question_number },
+            { 
+                $set: { 
+                    "answers.$.status": status,
+                    "answers.$.selected_option_index": selected_option_index,
+                },
+                $inc: {
+                    "answers.$.timeTaken": timeTaken
+                }
+            }
+        );
+    } catch(error) {
+        console.error("Error updating practice answer:", error);
+    }
+  });
+  // This socket event marks a question in a practice attempt for review
+  socket.on('practice_mark_for_review', async ({ attemptId, question_number, status }) => {
+    try {
+        await PracticeAttempt.updateOne(
+            { _id: attemptId, "answers.question_number": question_number },
+            { $set: { "answers.$.status": status } }
+        );
+    } catch (error) {
+        console.error("Error marking for review:", error);
+    }
+});
+
 
   socket.on('disconnect', () => {
     console.log('A user disconnected:', socket.id);

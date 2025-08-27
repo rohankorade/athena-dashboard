@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 
 const utilities = [
   { title: 'Sessions Info', path: '/utilities/sessions', description: 'Review mock sessions' },
+  { title: 'Practice', path: '/utilities/practice', description: 'Interactive question practice' },
   { title: 'Create Mock', path: '/utilities/local-mock/setup', description: 'Host an exam over LAN' },
   { title: 'Join Mock', path: '/utilities/local-mock/join', description: 'Join a session with a code' },
   { title: 'Pomodoro Timer', path: '/utilities/pomodoro-timer', description: 'Focus and break timer' },

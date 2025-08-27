@@ -98,9 +98,9 @@ a.button:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
   border-bottom: 1px solid #eee;
-  padding-bottom: 1rem;
+  padding-bottom: 0.5rem;
 }
 
 .question-number-badge {
@@ -1226,12 +1226,6 @@ p.time-taken strong {
   padding: 1.25rem;
   margin-bottom: 1rem;
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.result-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 /* --- Question Header --- */
@@ -1737,4 +1731,154 @@ p.time-taken strong {
 /* Custom Styles */
 .custom-margin-right{
   margin-right: 1rem;
+}
+
+/* ==========================================================================
+   6. Practice Command Center (FINAL Layout)
+   ========================================================================== */
+
+.practice-command-center {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+  width: 100%;
+  background-color: #f0f2f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.practice-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #fff;
+  border-bottom: 1px solid #e9ecef;
+  flex-shrink: 0;
+}
+.practice-header-bar h3 { margin: 0; font-size: 1.2rem; }
+.practice-progress { flex-grow: 1; display: flex; align-items: center; gap: 0.5rem; }
+.practice-progress progress { width: 100%; }
+.practice-progress span { font-size: 1.1rem; color: blue; }
+
+.practice-main-content {
+  flex-grow: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.practice-question-panel {
+  flex-basis: 75%;
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.question-header { display: flex; justify-content: space-between; align-items: center; }
+.topic-tag { background-color: #e9ecef; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; }
+.question-text { white-space: pre-wrap; }
+
+.options-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+.option-item {
+    padding: 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.option-item.correct { background-color: #d4edda; border-color: #28a745; }
+.option-item.incorrect { background-color: #f8d7da; border-color: #dc3545; }
+
+.practice-status-sidebar {
+  flex-basis: 25%;
+  background-color: #fff;
+  border-left: 1px solid #e0e0e0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+.practice-stats { display: flex; justify-content: space-around; text-align: center; padding-bottom: 1rem; border-bottom: 1px solid #f0f0f0; }
+.practice-stats .stat-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: none; padding: 0; min-width: 0; }
+.question-timer { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 500; padding: 1rem 0.5rem; }
+.practice-status-sidebar .palette-grid { flex-grow: 1; overflow-y: auto; padding-top: 1rem; }
+
+.practice-footer-bar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: #fff;
+  border-top: 1px solid #e9ecef;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.05); /* Added shadow for depth */
+}
+.footer-right-group { display: flex; align-items: center; gap: 0.75rem; }
+
+/* Palette Button Fixes */
+.palette-button.practice-unanswered { background-color: #f0f0f0; color: #555; }
+.palette-button.practice-correct { background-color: #fff; border-color: #28a745; }
+.palette-button.practice-incorrect { background-color: #fff; border-color: #dc3545; }
+.palette-button.practice-marked_for_review { background-color: #9b59b6; color: white; }
+
+.palette-button .icon { font-size: 1.5em; font-weight: bold; line-height: 1; }
+.palette-button .icon.correct { color: #28a745; }
+.palette-button .icon.incorrect { color: #dc3545; }
+
+.button-secondary.active { background-color: #9b59b6; color: white; border-color: #9b59b6; }
+
+/* Overhaul the question-header to use flexbox */
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem; /* Add some space below the header */
+}
+
+.question-number-badge {
+    background-color: #EBF5FF;
+    color: #005A9E;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.font-size-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.font-size-button {
+    background-color: #f0f2f5;
+    border: 1px solid #ccc;
+    color: #333;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    line-height: 1;
+}
+
+.font-size-button:hover {
+    background-color: #e0e0e0;
+}
+
+.font-size-label {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 500;
 }
