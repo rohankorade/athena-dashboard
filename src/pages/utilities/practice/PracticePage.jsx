@@ -84,6 +84,8 @@ function PracticePage() {
     const [timeOnQuestion, setTimeOnQuestion] = useState(0); // The live timer for the current question
     const [isModalOpen, setIsModalOpen] = useState(false); // Controls the explanation modal visibility
     const [fontSize, setFontSize] = useState(1.1); // Controls the font size of the question text
+    const [isAutoCheckOn, setIsAutoCheckOn] = useState(false); // Controls the auto-check feature
+    const [userJustClicked, setUserJustClicked] = useState(false);
 
     // --- Derived State (Calculated from other state variables) ---
     const currentAnswer = useMemo(() => practiceAttempt?.answers[currentQuestionIndex], [practiceAttempt, currentQuestionIndex]);
@@ -105,9 +107,11 @@ function PracticePage() {
             try {
                 const token = localStorage.getItem('authToken');
                 const headers = { 'Authorization': `Bearer ${token}` };
+                // 1. Fetch the attempt document which contains user progress
                 const attemptRes = await fetch(`http://localhost:5000/api/practice/attempt/${attemptId}`, { headers });
                 const attemptData = await attemptRes.json();
                 setPracticeAttempt(attemptData);
+                // 2. Fetch the actual questions for the test
                 const questionsRes = await fetch(`http://localhost:5000/api/practice/questions/${attemptData.practiceTestCollection}`, { headers });
                 const questionsData = await questionsRes.json();
                 setQuestions(questionsData);
@@ -123,18 +127,21 @@ function PracticePage() {
     // Effect for running the per-question timer
     useEffect(() => {
         let timer;
+        // Start a 1-second interval only if the answer hasn't been checked yet
         if (!isAnswerChecked && !isLoading) {
             timer = setInterval(() => setTimeOnQuestion(prev => prev + 1), 1000);
         }
+        // Cleanup function to stop the timer when the component unmounts or dependencies change
         return () => clearInterval(timer);
     }, [isAnswerChecked, isLoading, currentQuestionIndex]);
 
-    // Effect to sync the UI state when the question index changes
+    // Effect to sync the UI state when navigating between questions
     useEffect(() => {
         if (practiceAttempt) {
             const answer = practiceAttempt.answers[currentQuestionIndex];
             setSelectedOption(answer.selected_option_index);
             setTimeOnQuestion(answer.timeTaken);
+            setUserJustClicked(false);
         }
     }, [currentQuestionIndex, practiceAttempt]);
     
@@ -165,14 +172,16 @@ function PracticePage() {
     // Handles navigation via Previous, Next, or Palette buttons
     const navigateToQuestion = useCallback((index) => {
         if (index < 0 || index >= questions.length || !practiceAttempt) return;
+        // Before navigating, save the time spent on the current question
         const timeElapsed = timeOnQuestion - practiceAttempt.answers[currentQuestionIndex].timeTaken;
         sendTimeUpdate(timeElapsed);
         setCurrentQuestionIndex(index);
     }, [questions.length, timeOnQuestion, practiceAttempt, sendTimeUpdate, currentQuestionIndex]);
 
     // Checks the selected answer, updates state, and sends data to the server
-    const handleCheckAnswer = () => {
-        if (selectedOption === null) return;
+    const handleCheckAnswer = useCallback(() => {
+        if (selectedOption === null) return; 
+
         const currentQ = questions[currentQuestionIndex];
         const isCorrect = String(selectedOption + 1) === currentQ.correct_answer;
         const newStatus = isCorrect ? 'correct' : 'incorrect';
@@ -191,15 +200,31 @@ function PracticePage() {
                 timeTaken: timeElapsed,
             });
         }
+    }, [selectedOption, questions, currentQuestionIndex, practiceAttempt, timeOnQuestion, socket, attemptId]);
+
+    // This effect runs whenever `selectedOption` changes.
+    useEffect(() => {
+        if (isAutoCheckOn && userJustClicked && !isAnswerChecked) {
+            handleCheckAnswer();
+            setUserJustClicked(false);
+        }
+    }, [userJustClicked, isAutoCheckOn, isAnswerChecked, handleCheckAnswer]);
+
+
+    const handleOptionSelect = (index) => {
+        setSelectedOption(index);
+        setUserJustClicked(true);
     };
     
     // Toggles a question's status between 'unanswered' and 'marked_for_review'
     const handleMarkForReview = () => {
         const currentQ = questions[currentQuestionIndex];
         const newStatus = currentAnswer.status === 'marked_for_review' ? 'unanswered' : 'marked_for_review';
+        
         const updatedAnswers = [...practiceAttempt.answers];
         updatedAnswers[currentQuestionIndex] = { ...updatedAnswers[currentQuestionIndex], status: newStatus };
         setPracticeAttempt({ ...practiceAttempt, answers: updatedAnswers });
+        
         if (socket) {
              socket.emit('practice_mark_for_review', {
                 attemptId, question_number: currentQ.question_number, status: newStatus,
@@ -269,13 +294,15 @@ function PracticePage() {
                         </p>
                         <div className="options-container" style={{ fontSize: `${fontSize}rem` }}>
                              {currentQuestion.options.map((option, index) => (
-                                <div key={index} className={`option-item 
+                                <label key={index} htmlFor={`option-${index}`} className={`option-item 
                                     ${isAnswerChecked && index === correctAnswerIndex ? 'correct' : ''} 
                                     ${isAnswerChecked && index === selectedOption && index !== correctAnswerIndex ? 'incorrect' : ''}`}
                                 >
-                                    <input type="radio" id={`option-${index}`} name={`q-${currentQuestion.question_number}`} value={index} checked={selectedOption === index} onChange={() => setSelectedOption(index)} disabled={isAnswerChecked}/>
-                                    <label htmlFor={`option-${index}`}>{option}</label>
-                                </div>
+                                    <input type="radio" id={`option-${index}`} name={`q-${currentQuestion.question_number}`} value={index} checked={selectedOption === index} 
+                                        onChange={() => handleOptionSelect(index)} 
+                                        disabled={isAnswerChecked}/>
+                                    <span>{option}</span>
+                                </label>
                             ))}
                         </div>
                     </section>
@@ -292,9 +319,16 @@ function PracticePage() {
 
                 {/* Sticky Footer Action Bar */}
                 <footer className="practice-footer-bar">
-                    <button onClick={handleMarkForReview} className={`button-secondary ${currentAnswer.status === 'marked_for_review' ? 'active' : ''}`}>
-                        Mark for Review
-                    </button>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '1.5rem'}}>
+                        <button onClick={handleMarkForReview} className={`button-secondary ${currentAnswer.status === 'marked_for_review' ? 'active' : ''}`}>
+                            Mark for Review
+                        </button>
+                        <label className="toggle-switch">
+                            <span className="toggle-switch-label">Auto-Check</span>
+                            <input type="checkbox" checked={isAutoCheckOn} onChange={() => setIsAutoCheckOn(!isAutoCheckOn)} />
+                            <span className="toggle-switch-slider"></span>
+                        </label>
+                    </div>
                     <div className="footer-right-group">
                         <button onClick={() => setIsModalOpen(true)} className="button-secondary">Explanation</button>
                         <button onClick={handleCheckAnswer} disabled={isAnswerChecked || selectedOption === null} className="button-modern-green">Check Answer</button>

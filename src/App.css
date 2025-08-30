@@ -562,6 +562,9 @@ a.button:hover {
   border-radius: 8px;
   padding: 1rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .stat-card {
@@ -692,6 +695,26 @@ a.button:hover {
   margin: 0.5rem 0 0 0;
   color: #555;
   font-size: 1.1rem;
+}
+
+.subtle-divider {
+    height: 1px;
+    width: 80%;
+    background-color: #e0e0e0; /* A light gray */
+    margin: 1.5rem auto; /* Creates space above and below */
+}
+
+.hours-remaining {
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: #555;
+}
+
+.countdown-time-unit {
+    font-weight: 300; /* Makes the font slimmer */
+    opacity: 0.8; /* Makes the text slightly less prominent */
+    font-size: 0.9em; /* Makes the letters slightly smaller than the numbers */
+    margin: 0 1em 0 0.25em;
 }
 
 /* --- 4.3. Performance Section --- */
@@ -1794,6 +1817,7 @@ p.time-taken strong {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    cursor: pointer;
 }
 .option-item.correct { background-color: #d4edda; border-color: #28a745; }
 .option-item.incorrect { background-color: #f8d7da; border-color: #dc3545; }
@@ -1828,10 +1852,18 @@ p.time-taken strong {
 .palette-button.practice-correct { background-color: #fff; border-color: #28a745; }
 .palette-button.practice-incorrect { background-color: #fff; border-color: #dc3545; }
 .palette-button.practice-marked_for_review { background-color: #9b59b6; color: white; }
+.palette-button.active {
+    border: 2px solid #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    background-color: #007bff;
+    color: white;
+}
 
 .palette-button .icon { font-size: 1.5em; font-weight: bold; line-height: 1; }
 .palette-button .icon.correct { color: #28a745; }
 .palette-button .icon.incorrect { color: #dc3545; }
+.palette-button.active .icon.correct { color: white; }
+.palette-button.active .icon.incorrect { color: white; }
 
 .button-secondary.active { background-color: #9b59b6; color: white; border-color: #9b59b6; }
 
@@ -1844,13 +1876,22 @@ p.time-taken strong {
 }
 
 .question-number-badge {
-    background-color: #EBF5FF;
-    color: #005A9E;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-weight: 500;
+    background: linear-gradient(135deg, #4facfe, #005A9E); /* Vibrant blue gradient */
+    color: #fff;  /* White text for contrast */
+    padding: 0.5rem 1.2rem;
+    border-radius: 9999px;  /* Pill shape */
+    font-weight: 600;
     font-size: 1rem;
+    letter-spacing: 0.6px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: all 0.3s ease-in-out;
 }
+
+
 
 .font-size-controls {
     display: flex;
@@ -1881,4 +1922,51 @@ p.time-taken strong {
     font-size: 0.9rem;
     color: #666;
     font-weight: 500;
+}
+
+/* --- Auto-Check Toggle Switch Styles --- */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.toggle-switch-label {
+    font-weight: 500;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.toggle-switch-slider {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background-color: #ccc;
+    border-radius: 22px;
+    transition: background-color 0.2s;
+}
+
+.toggle-switch-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: white;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s;
+}
+
+.toggle-switch input {
+    display: none;
+}
+
+.toggle-switch input:checked + .toggle-switch-slider {
+    background-color: #28a745; /* Green when on */
+}
+
+.toggle-switch input:checked + .toggle-switch-slider::before {
+    transform: translateX(18px);
 }
