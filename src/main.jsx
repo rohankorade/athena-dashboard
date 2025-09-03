@@ -32,6 +32,8 @@ import RealTimeAnalysisPage from './pages/utilities/RealTimeAnalysisPage.jsx';
 import PracticeTestList from './pages/utilities/practice/PracticeTestList.jsx';
 import PracticePage from './pages/utilities/practice/PracticePage.jsx';
 import PracticeResultPage from './pages/utilities/practice/PracticeResultPage.jsx';
+import StashPage from './pages/utilities/StashPage.jsx';
+import StashCollectionPage from './pages/utilities/StashCollectionPage.jsx';
 
 // Authentication
 import LoginPage from './pages/LoginPage.jsx';
@@ -77,6 +79,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="utilities/sessions" element={<SessionListPage />} />
               <Route path="utilities/sessions/:sessionId" element={<SessionAttemptsPage />} />
               <Route path="utilities/sessions/:sessionId/attempts/:attemptId" element={<RealTimeAnalysisPage />} />
+              <Route path="utilities/stash" element={<StashPage />} />
+              <Route path="utilities/stash/:collectionName" element={<StashCollectionPage />} />
             </Route>
           </Route>
         </Routes>

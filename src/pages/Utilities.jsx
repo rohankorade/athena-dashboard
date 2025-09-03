@@ -9,6 +9,7 @@ const utilities = [
   { title: 'Create Mock', path: '/utilities/local-mock/setup', description: 'Host an exam over LAN' },
   { title: 'Join Mock', path: '/utilities/local-mock/join', description: 'Join a session with a code' },
   { title: 'Pomodoro Timer', path: '/utilities/pomodoro-timer', description: 'Focus and break timer' },
+  { title: 'Stash', path: '/utilities/stash', description: 'Alpha DB' }
 ];
 
 function Utilities() {

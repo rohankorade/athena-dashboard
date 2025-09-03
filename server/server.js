@@ -16,6 +16,7 @@ const Test = require('./models/Test');
 const ExamSessionSchema = require('./models/ExamSession');
 const ExamAttemptSchema = require('./models/ExamAttempt');
 const PracticeAttemptSchema = require('./models/PracticeAttempt');
+const StashVideoSchema = require('./models/StashVideo');
 
 // --- Express App Setup ---
 const app = express();
@@ -45,17 +46,17 @@ mongoose.connect(mongoURI)
 // Create separate DB connections for better organization
 const mockDb = mongoose.connection.useDb('localMocks', { useCache: true });
 const practiceDb = mongoose.connection.useDb('practiceDB', { useCache: true });
+const stashDb = mongoose.connection.useDb('stash-alpha', { useCache: true });
 
 // Register models on their respective DBs
 const MockExamSession = mockDb.model('ExamSession', ExamSessionSchema);
 const MockExamAttempt = mockDb.model('ExamAttempt', ExamAttemptSchema);
-const PracticeAttempt = mockDb.model('PracticeAttempt', PracticeAttemptSchema);
+const PracticeAttempt = practiceDb.model('PracticeAttempt', PracticeAttemptSchema);
 
 
 // =================================================================
 // --- PUBLIC API ROUTES (No protection needed for these) ---
 // =================================================================
-// ... (all your existing public routes for login and local mocks remain unchanged)
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { key } = req.body;
@@ -198,6 +199,7 @@ const testSeriesRouter = express.Router();
 const testRouter = express.Router();
 const editorialRouter = express.Router();
 const practiceRouter = express.Router();
+const stashRouter = express.Router();
 
 // Apply the middleware
 app.use('/api/exams', protect, examRouter);
@@ -205,6 +207,7 @@ app.use('/api/test-series', protect, testSeriesRouter);
 app.use('/api/tests', protect, testRouter);
 app.use('/api/editorials', protect, editorialRouter);
 app.use('/api/practice', protect, practiceRouter);
+app.use('/api/stash', protect, stashRouter);
 
 
 // --- Protected API Route Handlers ---
@@ -425,7 +428,6 @@ practiceRouter.post('/create-attempt', async (req, res) => {
     }
 });
 
-// This route gets a specific practice attempt by its ID
 practiceRouter.get('/attempt/:id', async (req, res) => {
     try {
         const attempt = await PracticeAttempt.findById(req.params.id);
@@ -438,13 +440,12 @@ practiceRouter.get('/attempt/:id', async (req, res) => {
     }
 });
 
-// This route marks a practice attempt as completed
 practiceRouter.patch('/attempt/:id/finish', async (req, res) => {
     try {
         const attempt = await PracticeAttempt.findByIdAndUpdate(
             req.params.id,
             { isCompleted: true },
-            { new: true } // This option returns the updated document
+            { new: true }
         );
         if (!attempt) {
             return res.status(404).json({ message: 'Practice attempt not found' });
@@ -452,6 +453,103 @@ practiceRouter.patch('/attempt/:id/finish', async (req, res) => {
         res.json(attempt);
     } catch (error) {
         res.status(500).json({ message: 'Error finishing practice attempt', error });
+    }
+});
+
+// --- STASH API ROUTES ---
+stashRouter.get('/collections', async (req, res) => {
+    try {
+        const collections = await stashDb.db.listCollections().toArray();
+        const collectionsWithCounts = await Promise.all(
+            collections.map(async (col) => {
+                const count = await stashDb.db.collection(col.name).countDocuments();
+                return { name: col.name, count };
+            })
+        );
+        res.json(collectionsWithCounts);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching stash collections', error });
+    }
+});
+
+stashRouter.get('/collections/:collectionName', async (req, res) => {
+    try {
+        const { collectionName } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = 20;
+        const skip = (page - 1) * limit;
+
+        const StashModel = stashDb.model(collectionName, StashVideoSchema, collectionName);
+        const allVideos = await StashModel.find({}).lean();
+        
+
+        const extractDate = (title) => {
+            const match = title.match(/(\d{2})\.(\d{2})\.(\d{2})/);
+            if (match) {
+                const [_, year, month, day] = match;
+                // Add "20" to the year, and subtract 1 from month for 0-indexing
+                return new Date(`20${year}`, month - 1, day); 
+            }
+            return null; // Return null if no date pattern is found
+        };
+
+        allVideos.sort((a, b) => {
+            const dateA = extractDate(a.title);
+            const dateB = extractDate(b.title);
+
+            if (dateA && dateB) {
+                return dateA - dateB; // Sorts oldest to latest
+            }
+            // If only one has a date, we can decide where to put it.
+            // Let's put videos with dates first.
+            if (dateA) return -1; 
+            if (dateB) return 1;
+
+            // If neither has a date, fall back to sorting by the original 'createdAt' timestamp
+            // This requires your documents to have timestamps, which the new schema provides.
+            if (a.createdAt && b.createdAt) {
+                return new Date(a.createdAt) - new Date(b.createdAt);
+            }
+
+            // Final fallback to title sorting if no dates or timestamps are present
+            return a.title.localeCompare(b.title);
+        });
+        
+        const totalVideos = allVideos.length;
+        const totalPages = Math.ceil(totalVideos / limit);
+        const videos = allVideos.slice(skip, skip + limit);
+
+        res.json({ videos, currentPage: page, totalPages });
+    } catch (error) {
+        console.error("Error in /collections/:collectionName :", error);
+        res.status(500).json({ message: 'Error fetching videos from collection', error });
+    }
+});
+
+
+stashRouter.get('/search', async (req, res) => {
+    try {
+        const { q } = req.query;
+        if (!q) {
+            return res.json([]);
+        }
+
+        const collections = await stashDb.db.listCollections().toArray();
+        let searchResults = [];
+
+        for (const col of collections) {
+            const StashModel = stashDb.model(col.name, StashVideoSchema);
+            const results = await StashModel
+                .find({ title: { $regex: q, $options: 'i' } })
+                .limit(10)
+                .lean();
+            searchResults.push(...results);
+        }
+        
+        searchResults.sort((a, b) => a.title.localeCompare(b.title));
+        res.json(searchResults.slice(0, 50));
+    } catch (error) {
+        res.status(500).json({ message: 'Error during stash search', error });
     }
 });
 
@@ -657,8 +755,6 @@ io.on('connection', (socket) => {
       await submitExamAttempt(attemptId, socket);
   });
 
-
-  // --- Socket.io logic for Practice Mode ---
   socket.on('practice_update_answer', async ({ attemptId, question_number, status, selected_option_index, timeTaken }) => {
     try {
         await PracticeAttempt.updateOne(
@@ -677,7 +773,7 @@ io.on('connection', (socket) => {
         console.error("Error updating practice answer:", error);
     }
   });
-  // This socket event marks a question in a practice attempt for review
+
   socket.on('practice_mark_for_review', async ({ attemptId, question_number, status }) => {
     try {
         await PracticeAttempt.updateOne(

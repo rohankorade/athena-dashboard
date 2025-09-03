@@ -1970,3 +1970,94 @@ p.time-taken strong {
 .toggle-switch input:checked + .toggle-switch-slider::before {
     transform: translateX(18px);
 }
+
+
+
+/* ==========================================================================
+   Stash Utility Styles
+   ========================================================================== */
+
+/* --- Search Bar --- */
+.search-bar-container {
+  padding-top: 1rem;
+}
+
+/* --- Video Card Layout --- */
+.stash-video-card {
+  display: flex;
+  background-color: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1rem;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  align-items: center; /* Vertically align items */
+}
+.stash-video-card:hover {
+  border-color: #cde4ff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.stash-card-main {
+  flex-grow: 1; /* Takes up most of the space */
+  min-width: 0;
+}
+
+.stash-card-actions {
+  flex-shrink: 0; /* Prevents buttons from shrinking */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 120px;
+  margin-left: 1rem;
+}
+
+/* --- Video Card Typography --- */
+.stash-video-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: #212529;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Adds '...' if title is too long */
+}
+
+.stash-video-filename {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin: 0 0 0.75rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Metadata Pills --- */
+.stash-metadata-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pill-item {
+  background-color: #e9ecef;
+  color: #495057;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* --- Pagination --- */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  margin-top: auto; /* Pushes it to the bottom */
+}
+
+.pagination-controls button {
+    padding: 0.5rem 1rem;
+}
