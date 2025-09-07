@@ -24,7 +24,6 @@ function StashBrowserPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- URL is the source of truth ---
   const routeParams = (params['*'] || '').split('/');
   const view = routeParams[0] || 'dashboard';
   let collectionName = null;
@@ -43,11 +42,9 @@ function StashBrowserPage() {
     }
   }
   
-  // --- Separate state for the input field ---
   const [inputValue, setInputValue] = useState(searchTerm);
   const debouncedInputValue = useDebounce(inputValue, 500);
 
-  // --- This function fetches data based on the URL ---
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setContentData({});
@@ -76,7 +73,6 @@ function StashBrowserPage() {
     }
   }, [view, collectionName, searchTerm, currentPage]);
 
-  // --- This effect fetches data when the component loads or the URL changes ---
   useEffect(() => {
     if (location.pathname === '/utilities/stash' || location.pathname === '/utilities/stash/') {
         navigate('/utilities/stash/dashboard', { replace: true });
@@ -94,34 +90,24 @@ function StashBrowserPage() {
     fetchData();
   }, [fetchData, location.pathname, navigate]);
 
-
-  // --- This effect syncs the URL's search term TO the input box ---
   useEffect(() => {
-    // If the search term from the URL is different from what's in the input box, update the input box.
-    // This handles direct navigation, and using the browser's back/forward buttons.
     if (searchTerm !== inputValue) {
       setInputValue(searchTerm);
     }
   }, [searchTerm]);
 
-  // --- This effect syncs the user's typing in the input box TO the URL ---
   useEffect(() => {
-    // This effect should only trigger navigation, not state updates.
     const trimmedDebounced = debouncedInputValue.trim();
     
-    // If the user's debounced input is different from what the URL currently shows...
     if (trimmedDebounced !== searchTerm) {
       if (trimmedDebounced) {
-        // ...and they've typed something, navigate to the new search results.
         navigate(`/utilities/stash/search/${encodeURIComponent(trimmedDebounced)}/page/1`);
       } else if (searchTerm) {
-        // ...and they've cleared the box (while a search was active), go to the dashboard.
         navigate('/utilities/stash/dashboard');
       }
     }
   }, [debouncedInputValue, searchTerm, navigate]);
 
-  // Preloading effect for hover images
   useEffect(() => {
     if (contentData && contentData.videos && contentData.videos.length > 0) {
       contentData.videos.forEach(video => {
@@ -133,19 +119,26 @@ function StashBrowserPage() {
     }
   }, [contentData.videos]);
 
+  // 1. Create the handler function to clear the input value.
+  const handleNavLinkClick = () => {
+    setInputValue('');
+  };
+
   return (
     <div className="stash-browser-layout">
       <StashSidebar 
         collections={collections}
-        searchTerm={inputValue} // The input is now controlled by its own state
-        onSearchChange={(e) => setInputValue(e.target.value)} // Typing updates the input state
+        searchTerm={inputValue}
+        onSearchChange={(e) => setInputValue(e.target.value)}
+        // 2. Pass the handler down to the sidebar component.
+        onNavLinkClick={handleNavLinkClick}
       />
       <StashContentArea 
         view={view}
         data={contentData}
         isLoading={isLoading}
         collectionName={collectionName}
-        searchTerm={searchTerm} // Content rendering always uses the truth from the URL
+        searchTerm={searchTerm}
       />
     </div>
   );

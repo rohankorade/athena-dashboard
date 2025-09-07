@@ -3,7 +3,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 
-function StashSidebar({ collections, searchTerm, onSearchChange }) {
+// 1. Accept a new prop: `onNavLinkClick`
+function StashSidebar({ collections, searchTerm, onSearchChange, onNavLinkClick }) {
   const getPath = (viewName) => `/utilities/stash/${viewName}`;
 
   return (
@@ -19,13 +20,15 @@ function StashSidebar({ collections, searchTerm, onSearchChange }) {
       <nav className="sidebar-nav">
         <ul>
           <li>
-            <NavLink to={getPath('dashboard')} className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+            {/* 2. Add the onClick handler to the NavLink */}
+            <NavLink to={getPath('dashboard')} onClick={onNavLinkClick} className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
               Dashboard
             </NavLink>
           </li>
           {collections.map(col => (
             <li key={col.name}>
-              <NavLink to={getPath(col.name)} className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+              {/* 3. Add the onClick handler here as well */}
+              <NavLink to={getPath(col.name)} onClick={onNavLinkClick} className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
                 <span>{col.name.replace(/_/g, ' ')}</span>
                 <span className="collection-count">{col.count}</span>
               </NavLink>
