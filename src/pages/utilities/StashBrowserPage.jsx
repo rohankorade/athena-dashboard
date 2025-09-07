@@ -19,12 +19,12 @@ function StashBrowserPage() {
   const [collections, setCollections] = useState([]);
   const [contentData, setContentData] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [localSearchTerm, setLocalSearchTerm] = useState('');
 
   const params = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // --- URL is the source of truth ---
   const routeParams = (params['*'] || '').split('/');
   const view = routeParams[0] || 'dashboard';
   let collectionName = null;
@@ -42,9 +42,12 @@ function StashBrowserPage() {
       currentPage = parseInt(routeParams[2], 10) || 1;
     }
   }
+  
+  // --- Separate state for the input field ---
+  const [inputValue, setInputValue] = useState(searchTerm);
+  const debouncedInputValue = useDebounce(inputValue, 500);
 
-  const debouncedSearchTerm = useDebounce(localSearchTerm, 500);
-
+  // --- This function fetches data based on the URL ---
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setContentData({});
@@ -73,12 +76,12 @@ function StashBrowserPage() {
     }
   }, [view, collectionName, searchTerm, currentPage]);
 
+  // --- This effect fetches data when the component loads or the URL changes ---
   useEffect(() => {
     if (location.pathname === '/utilities/stash' || location.pathname === '/utilities/stash/') {
         navigate('/utilities/stash/dashboard', { replace: true });
         return;
     }
-
     const fetchCollections = async () => {
       const token = localStorage.getItem('authToken');
       const headers = { 'Authorization': `Bearer ${token}` };
@@ -87,46 +90,38 @@ function StashBrowserPage() {
         setCollections(await res.json());
       } catch (error) { console.error("Failed to fetch collections:", error); }
     };
-
     fetchCollections();
     fetchData();
   }, [fetchData, location.pathname, navigate]);
 
-  const isInitialMount = React.useRef(true);
-  const prevLocationKey = React.useRef(location.key);
 
+  // --- This effect syncs the URL's search term TO the input box ---
   useEffect(() => {
-    // Don't run on the very first render of the component instance.
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      prevLocationKey.current = location.key; // Make sure ref is up to date
-      return;
+    // If the search term from the URL is different from what's in the input box, update the input box.
+    // This handles direct navigation, and using the browser's back/forward buttons.
+    if (searchTerm !== inputValue) {
+      setInputValue(searchTerm);
     }
+  }, [searchTerm]);
 
-    // If the location key has changed, it's a navigation event. Don't run search logic.
-    // React Router gives each location a unique key. This is the most reliable
-    // way to detect a navigation event vs. a simple state-change re-render.
-    if (prevLocationKey.current !== location.key) {
-      prevLocationKey.current = location.key; // Update key and bail.
-      return;
-    }
-
-    // If we get here, it's a state change on the same page (e.g., user typing).
-    if (debouncedSearchTerm !== searchTerm) {
-      if (debouncedSearchTerm) {
-        navigate(`/utilities/stash/search/${encodeURIComponent(debouncedSearchTerm)}/page/1`);
-      } else if (view === 'search') {
+  // --- This effect syncs the user's typing in the input box TO the URL ---
+  useEffect(() => {
+    // This effect should only trigger navigation, not state updates.
+    const trimmedDebounced = debouncedInputValue.trim();
+    
+    // If the user's debounced input is different from what the URL currently shows...
+    if (trimmedDebounced !== searchTerm) {
+      if (trimmedDebounced) {
+        // ...and they've typed something, navigate to the new search results.
+        navigate(`/utilities/stash/search/${encodeURIComponent(trimmedDebounced)}/page/1`);
+      } else if (searchTerm) {
+        // ...and they've cleared the box (while a search was active), go to the dashboard.
         navigate('/utilities/stash/dashboard');
       }
     }
-  }, [debouncedSearchTerm, searchTerm, view, navigate, location.key]);
-  
-  // Sync URL search term to local state for the input box
-  useEffect(() => {
-    setLocalSearchTerm(searchTerm);
-  }, [searchTerm]);
+  }, [debouncedInputValue, searchTerm, navigate]);
 
-  // Preloading effect (unchanged)
+  // Preloading effect for hover images
   useEffect(() => {
     if (contentData && contentData.videos && contentData.videos.length > 0) {
       contentData.videos.forEach(video => {
@@ -138,20 +133,19 @@ function StashBrowserPage() {
     }
   }, [contentData.videos]);
 
-
   return (
     <div className="stash-browser-layout">
       <StashSidebar 
         collections={collections}
-        searchTerm={localSearchTerm}
-        onSearchChange={(e) => setLocalSearchTerm(e.target.value)}
+        searchTerm={inputValue} // The input is now controlled by its own state
+        onSearchChange={(e) => setInputValue(e.target.value)} // Typing updates the input state
       />
       <StashContentArea 
         view={view}
         data={contentData}
         isLoading={isLoading}
         collectionName={collectionName}
-        searchTerm={searchTerm}
+        searchTerm={searchTerm} // Content rendering always uses the truth from the URL
       />
     </div>
   );
