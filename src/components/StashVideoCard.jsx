@@ -2,18 +2,37 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import useAuthenticatedImage from '../hooks/useAuthenticatedImage';
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   try {
     const [day, month, year] = dateString.split('-');
     const date = new Date(`${year}-${month}-${day}`);
-    // Corrected the function name here
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   } catch (e) {
     return dateString;
   }
 };
+
+// A small component to handle the authenticated image loading
+const AuthenticatedImage = ({ src, ...props }) => {
+  const apiUrl = src ? `/api/stash/image?url=${encodeURIComponent(src)}` : null;
+  const { imageSrc, loading, error } = useAuthenticatedImage(apiUrl);
+
+  if (loading) {
+    // You can return a placeholder or spinner here
+    return <div className="image-placeholder" style={{ aspectRatio: '16/9', backgroundColor: '#333' }}></div>;
+  }
+
+  if (error) {
+    // You can return an error indicator here
+    return <div className="image-placeholder" style={{ aspectRatio: '16/9', backgroundColor: '#333' }}>Error</div>;
+  }
+
+  return imageSrc ? <img src={imageSrc} {...props} /> : <div className="image-placeholder" style={{ aspectRatio: '16/9', backgroundColor: '#333' }}></div>;
+};
+
 
 function StashVideoCard({ video }) {
   const navigate = useNavigate();
@@ -41,15 +60,15 @@ function StashVideoCard({ video }) {
   return (
     <div className="stash-card">
       <div className="stash-card-visual">
-        <img 
-          src={`/api/stash/image?url=${encodeURIComponent(video.scene_cover)}`}
+        <AuthenticatedImage
+          src={video.scene_cover}
           alt={video.scene_title} 
           loading="lazy" 
           className="stash-card-thumbnail"
         />
         {video.scene_preview && (
-          <img
-            src={`/api/stash/image?url=${encodeURIComponent(video.scene_preview)}`}
+          <AuthenticatedImage
+            src={video.scene_preview}
             alt="Scene preview"
             className="stash-card-preview"
           />
