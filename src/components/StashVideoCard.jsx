@@ -66,7 +66,7 @@ function StashVideoCard({ video }) {
         <div className="stash-card-metadata">
           <span>🗓️ {formatDate(video.scene_date)}</span>
           <span>💾 {video.file_size}</span>
-          <span className="collection-tag">{video.collectionName}</span>
+          <span className="collection-tag">{video.collection}</span>
         </div>
       </div>
       <div className="stash-card-actions">
