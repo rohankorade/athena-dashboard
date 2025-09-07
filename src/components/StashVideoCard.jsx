@@ -42,14 +42,14 @@ function StashVideoCard({ video }) {
     <div className="stash-card">
       <div className="stash-card-visual">
         <img 
-          src={video.scene_cover} 
+          src={`/api/stash/image?url=${encodeURIComponent(video.scene_cover)}`}
           alt={video.scene_title} 
           loading="lazy" 
           className="stash-card-thumbnail"
         />
         {video.scene_preview && (
           <img
-            src={video.scene_preview} 
+            src={`/api/stash/image?url=${encodeURIComponent(video.scene_preview)}`}
             alt="Scene preview"
             className="stash-card-preview"
           />

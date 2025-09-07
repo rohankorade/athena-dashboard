@@ -6,6 +6,10 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require("socket.io");
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const axios = require('axios');
 
 // Importing the models
 const Auth = require('./models/Auth');
@@ -594,6 +598,54 @@ stashRouter.get('/dashboard/recent', async (req, res) => {
         res.json(recentVideos.slice(0, 5)); // Return the top 5 overall
     } catch (error) {
         res.status(500).json({ message: 'Error fetching recent videos', error });
+    }
+});
+
+// GET /api/stash/image - Caching proxy for images
+stashRouter.get('/image', async (req, res) => {
+    const { url } = req.query;
+    if (!url) {
+        return res.status(400).send({ message: 'URL query parameter is required.' });
+    }
+
+    try {
+        // Create a unique, safe filename from the URL
+        const hash = crypto.createHash('md5').update(url).digest('hex');
+        const extension = path.extname(new URL(url).pathname);
+        const fileName = `${hash}${extension}`;
+        const cachePath = path.join(__dirname, 'cache', fileName);
+
+        // Check if the file already exists in the cache
+        if (fs.existsSync(cachePath)) {
+            return res.sendFile(cachePath);
+        }
+
+        // If not in cache, download it
+        const response = await axios({
+            method: 'GET',
+            url: url,
+            responseType: 'stream'
+        });
+
+        // Pipe the image data to a file in the cache directory
+        const writer = fs.createWriteStream(cachePath);
+        response.data.pipe(writer);
+
+        writer.on('finish', () => {
+            // Once saved, send the file
+            res.sendFile(cachePath);
+        });
+
+        writer.on('error', (err) => {
+            console.error('Failed to write image to cache:', err);
+            // Clean up the broken file
+            fs.unlink(cachePath, () => {});
+            res.status(500).send({ message: 'Failed to cache image.' });
+        });
+
+    } catch (error) {
+        console.error('Error proxying image:', error.message);
+        res.status(500).send({ message: 'Error fetching image.' });
     }
 });
 
