@@ -27,10 +27,11 @@ function StashBrowserPage() {
 
   // Extract parameters from the URL. The '*' in the route makes them available under the '*' key.
   const routeParams = (params['*'] || '').split('/');
-  const [view, collectionName, pageOrAction, pageNumber] = routeParams;
-
-  const currentPage = pageOrAction === 'page' ? parseInt(pageNumber, 10) : 1;
-  const searchTerm = view === 'search' ? collectionName : '';
+  // NEW: Simplified and corrected parsing logic
+  const [view, pageAction, pageNumStr] = routeParams;
+  const collectionName = view !== 'search' && view !== 'dashboard' ? view : null;
+  const searchTerm = view === 'search' ? pageAction : '';
+  const currentPage = pageAction === 'page' ? parseInt(pageNumStr, 10) : 1;
 
   const debouncedSearchTerm = useDebounce(localSearchTerm, 500);
 
@@ -61,7 +62,7 @@ function StashBrowserPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [view, collectionName, currentPage, searchTerm]); // Dependencies are now URL params
+  }, [view, pageAction, currentPage, searchTerm, collectionName]); // Dependencies are now URL params
 
   // --- Initial data load and redirection ---
   useEffect(() => {

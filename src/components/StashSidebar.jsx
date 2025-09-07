@@ -22,14 +22,16 @@ function StashSidebar({ collections, activeView, searchTerm, onSearchChange }) {
           {/* Use NavLink for dashboard */}
           <li>
             <NavLink to={getPath('dashboard')}>
-              Dashboard
+              <span>Dashboard</span>
+              {/* This empty span ensures flex justification works like the items below */}
+              <span></span>
             </NavLink>
           </li>
           {/* Map collections to NavLink components */}
           {collections.map(col => (
             <li key={col.name}>
                <NavLink to={getPath(col.name)}>
-                {col.name.replace(/_/g, ' ')}
+                <span>{col.name.replace(/_/g, ' ')}</span>
                 <span className="collection-count">{col.count}</span>
               </NavLink>
             </li>
