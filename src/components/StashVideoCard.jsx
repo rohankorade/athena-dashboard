@@ -48,12 +48,9 @@ function StashVideoCard({ video }) {
           className="stash-card-thumbnail"
         />
         {video.scene_preview && (
-          <video 
+          <img
             src={video.scene_preview} 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
+            alt="Scene preview"
             className="stash-card-preview"
           />
         )}
