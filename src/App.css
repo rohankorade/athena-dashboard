@@ -1972,8 +1972,6 @@ p.time-taken strong {
 }
 
 
-/* src/App.css */
-
 /* ==========================================================================
    Stash Browser - New Elegant Design (Definitive Positioning Fix)
    ========================================================================== */
@@ -2021,30 +2019,16 @@ p.time-taken strong {
   margin: 0;
 }
 
+/* --- Stash Sidebar Navigation Links --- */
+
+/* Remove default padding from list items to ensure links fill the space */
 .sidebar-nav li {
-  padding: 0.75rem 1.5rem;
-  cursor: pointer;
-  color: #b3b3b3;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  padding: 0;
+  margin: 0;
 }
 
-.sidebar-nav li:hover {
-  background-color: #282828;
-  color: #fff;
-}
-
-.sidebar-nav li.active {
-  background-color: #333;
-  color: #fff;
-  border-left: 3px solid #1db954;
-  padding-left: calc(1.5rem - 3px);
-}
-
-.sidebar-nav a {
+/* Style the NavLink (which renders as an <a> tag) to be the full, clickable row */
+.sidebar-nav .nav-link {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2052,18 +2036,21 @@ p.time-taken strong {
   text-decoration: none;
   color: #b3b3b3;
   font-weight: 500;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent; /* Placeholder for the active indicator */
 }
 
-.sidebar-nav a:hover {
+/* Style for the hover state on the link */
+.sidebar-nav .nav-link:hover {
   background-color: #282828;
   color: #fff;
 }
 
-.sidebar-nav a.active {
+/* Style for the active state on the link */
+.sidebar-nav .nav-link.active {
   background-color: #333;
   color: #fff;
-  border-left: 3px solid #1db954;
-  padding-left: calc(1.5rem - 3px);
+  border-left-color: #1db954; /* Green indicator for the active link */
 }
 
 .collection-count {
