@@ -466,6 +466,22 @@ a.button:hover {
   background-color: #95a5a6; /* Darker Gray */
 }
 
+.button-modern-gray:disabled {
+  background-color: #e9ecef; /* A lighter, washed-out gray */
+  color: #adb5bd;             /* Muted text color */
+  border-color: #dee2e6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Ensure the hover effect is also removed on disabled buttons */
+.button-modern-gray:disabled:hover {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+
 /* 🔮 Modern Purple */
 .button-modern-purple {
   background-color: #9b59b6; /* Flat Purple */

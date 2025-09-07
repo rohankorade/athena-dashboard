@@ -8,40 +8,66 @@ function PaginationControls({ currentPage, totalPages, collectionName, view, sea
     return null;
   }
 
-  let prevPagePath, nextPagePath;
+  // --- NEW: Generate all four navigation paths ---
+  let firstPagePath, prevPagePath, nextPagePath, lastPagePath;
 
-  // Create different links based on whether we are searching or browsing a collection
   if (view === 'search') {
-    // FIX: Encode the searchTerm to handle spaces and special characters correctly
     const encodedSearchTerm = encodeURIComponent(searchTerm);
+    firstPagePath = `/utilities/stash/search/${encodedSearchTerm}/page/1`;
     prevPagePath = `/utilities/stash/search/${encodedSearchTerm}/page/${currentPage - 1}`;
     nextPagePath = `/utilities/stash/search/${encodedSearchTerm}/page/${currentPage + 1}`;
+    lastPagePath = `/utilities/stash/search/${encodedSearchTerm}/page/${totalPages}`;
   } else {
+    firstPagePath = `/utilities/stash/${collectionName}/page/1`;
     prevPagePath = `/utilities/stash/${collectionName}/page/${currentPage - 1}`;
     nextPagePath = `/utilities/stash/${collectionName}/page/${currentPage + 1}`;
+    lastPagePath = `/utilities/stash/${collectionName}/page/${totalPages}`;
   }
 
+  // --- NEW: Simplified conditions for disabling buttons ---
+  const canGoBack = currentPage > 1;
+  const canGoForward = currentPage < totalPages;
 
   return (
     <div className="pagination-controls">
-      {currentPage > 1 ? (
-        <Link to={prevPagePath} className="button-modern-gray">
-          &larr; Previous Page
+      {/* First Page Button */}
+      {canGoBack ? (
+        <Link to={firstPagePath} className="button-modern-gray" title="First Page">
+          &laquo;
         </Link>
       ) : (
-        <button disabled className="button-modern-gray">&larr; Previous Page</button>
+        <button disabled className="button-modern-gray">&laquo;</button>
+      )}
+
+      {/* Previous Page Button */}
+      {canGoBack ? (
+        <Link to={prevPagePath} className="button-modern-gray">
+          &larr; Previous
+        </Link>
+      ) : (
+        <button disabled className="button-modern-gray">&larr; Previous</button>
       )}
       
       <span>
         Page {currentPage} of {totalPages}
       </span>
 
-      {currentPage < totalPages ? (
+      {/* Next Page Button */}
+      {canGoForward ? (
         <Link to={nextPagePath} className="button-modern-gray">
-          Next Page &rarr;
+          Next &rarr;
         </Link>
       ) : (
-        <button disabled className="button-modern-gray">Next Page &rarr;</button>
+        <button disabled className="button-modern-gray">Next &rarr;</button>
+      )}
+
+      {/* Last Page Button */}
+      {canGoForward ? (
+        <Link to={lastPagePath} className="button-modern-gray" title="Last Page">
+          &raquo;
+        </Link>
+      ) : (
+        <button disabled className="button-modern-gray">&raquo;</button>
       )}
     </div>
   );
