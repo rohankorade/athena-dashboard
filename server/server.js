@@ -539,29 +539,57 @@ stashRouter.get('/collections/:collectionName', async (req, res) => {
     }
 });
 
-
 stashRouter.get('/search', async (req, res) => {
     try {
-        const { q } = req.query;
+        const { q, page = 1 } = req.query;
         if (!q) {
-            return res.json([]);
+            return res.json({ videos: [], currentPage: 1, totalPages: 1 });
         }
 
+        const limit = 15;
+        const skip = (page - 1) * limit;
+
         const collections = await stashDb.db.listCollections().toArray();
-        let searchResults = [];
+        let allResults = [];
+
+        // --- NEW: Split search query into individual terms ---
+        const searchTerms = q.split(' ').filter(term => term.length > 0);
 
         for (const col of collections) {
             const StashModel = stashDb.model(col.name, StashVideoSchema, col.name);
-            const results = await StashModel
-                .find({ scene_title: { $regex: q, $options: 'i' } }) // Search scene_title now
-                .limit(10)
-                .lean();
-            searchResults.push(...results);
+
+            // --- NEW: Create a complex query to match all terms in either title or performers ---
+            const andConditions = searchTerms.map(term => {
+                const termRegex = new RegExp(term, 'i'); // Case-insensitive regex for each term
+                return {
+                    $or: [
+                        { scene_title: termRegex },
+                        { scene_performers: termRegex }
+                    ]
+                };
+            });
+            
+            const query = andConditions.length > 0 ? { $and: andConditions } : {};
+
+            const resultsInCollection = await StashModel.find(query).lean();
+            allResults.push(...resultsInCollection);
         }
+
+        // --- NEW: Sort and paginate the aggregated results ---
+        allResults.sort((a, b) => a.scene_title.localeCompare(b.scene_title));
         
-        searchResults.sort((a, b) => a.scene_title.localeCompare(b.scene_title));
-        res.json(searchResults.slice(0, 50));
+        const totalVideos = allResults.length;
+        const totalPages = Math.ceil(totalVideos / limit);
+        const paginatedVideos = allResults.slice(skip, skip + limit);
+
+        res.json({ 
+            videos: paginatedVideos, 
+            currentPage: parseInt(page, 10), 
+            totalPages 
+        });
+
     } catch (error) {
+        console.error("Error during stash search:", error);
         res.status(500).json({ message: 'Error during stash search', error });
     }
 });
@@ -593,7 +621,7 @@ stashRouter.get('/dashboard/recent', async (req, res) => {
             const StashModel = stashDb.model(col.name, StashVideoSchema, col.name);
             const videos = await StashModel.find({})
                 .sort({ createdAt: -1 }) // Sort by newest
-                .limit(5) // Get the top 5 from each collection
+                .limit(9) // Get the top 5 from each collection
                 .lean();
             recentVideos.push(...videos);
         }
@@ -601,7 +629,7 @@ stashRouter.get('/dashboard/recent', async (req, res) => {
         // Sort the aggregated results to find the absolute newest
         recentVideos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-        res.json(recentVideos.slice(0, 5)); // Return the top 5 overall
+        res.json(recentVideos.slice(0, 9)); // Return the top 5 overall
     } catch (error) {
         res.status(500).json({ message: 'Error fetching recent videos', error });
     }
@@ -641,16 +669,18 @@ stashRouter.get('/image', async (req, res) => {
         // Pipe the image data to a file in the cache directory
         const writer = fs.createWriteStream(cachePath);
         response.data.pipe(writer);
-
+        
+        // Wait for the writer to finish saving the file to the cache.
         writer.on('finish', () => {
-            console.log(`[Image Cache] SUCCESS: Saved and sending file: ${cachePath}`);
-            // Once saved, send the file
+            console.log(`[Image Cache] SUCCESS: Saved and now sending file: ${cachePath}`);
+            // Once saved, THEN send the file as the response.
             res.sendFile(cachePath);
         });
 
+        // Handle errors during the writing process.
         writer.on('error', (err) => {
             console.error(`[Image Cache] FAILED to write to cache: ${err.message}`);
-            // Clean up the broken file
+            // Clean up the broken file if it exists.
             fs.unlink(cachePath, () => {});
             res.status(500).send({ message: 'Failed to cache image.' });
         });

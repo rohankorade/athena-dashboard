@@ -3,6 +3,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthenticatedImage from '../hooks/useAuthenticatedImage';
+import Highlight from './Highlight'; // Import the new component
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
@@ -34,7 +35,7 @@ const AuthenticatedImage = ({ src, ...props }) => {
 };
 
 
-function StashVideoCard({ video }) {
+function StashVideoCard({ video, searchTerm }) { // Accept searchTerm prop
   const navigate = useNavigate();
 
   const handlePlay = () => {
@@ -75,12 +76,14 @@ function StashVideoCard({ video }) {
         )}
       </div>
       <div className="stash-card-info">
-        <h3 className="stash-card-title" title={video.scene_title}>{video.scene_title}</h3>
+        <h3 className="stash-card-title" title={video.scene_title}>
+          <Highlight text={video.scene_title} search={searchTerm} />
+        </h3>
         <p className="stash-card-performers">
-          {Array.isArray(video.scene_performers) 
-            ? video.scene_performers.join(', ') 
-            : video.scene_performers
-          }
+          <Highlight 
+            text={Array.isArray(video.scene_performers) ? video.scene_performers.join(', ') : video.scene_performers} 
+            search={searchTerm} 
+          />
         </p>
         <div className="stash-card-metadata">
           <span>🗓️ {formatDate(video.scene_date)}</span>

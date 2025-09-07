@@ -4,8 +4,7 @@ import React from 'react';
 import StashVideoCard from './StashVideoCard';
 import PaginationControls from './PaginationControls';
 
-// The collectionName prop is added here
-function StashContentArea({ view, data, isLoading, collectionName }) {
+function StashContentArea({ view, data, isLoading, collectionName, searchTerm }) {
 
   const renderContent = () => {
     if (isLoading) {
@@ -14,7 +13,6 @@ function StashContentArea({ view, data, isLoading, collectionName }) {
 
     if (view === 'dashboard' && data.stats) {
       return (
-        // ... (dashboard view remains the same)
         <div className="dashboard-view-content">
           <div className="stats-grid">
               <div className="stat-item">
@@ -28,7 +26,7 @@ function StashContentArea({ view, data, isLoading, collectionName }) {
           </div>
           <h2>Recently Added</h2>
           <div className="video-grid">
-            {data.recent.map(video => <StashVideoCard key={video._id} video={video} />)}
+            {data.recent.map(video => <StashVideoCard key={video._id} video={video} searchTerm={searchTerm} />)}
           </div>
         </div>
       );
@@ -38,18 +36,24 @@ function StashContentArea({ view, data, isLoading, collectionName }) {
       return (
         <div className="collection-view-wrapper">
           <div className="video-grid">
-            {data.videos.map(video => <StashVideoCard key={video._id} video={video} />)}
+            {data.videos.map(video => <StashVideoCard key={video._id} video={video} searchTerm={searchTerm} />)}
           </div>
           <PaginationControls 
             currentPage={data.currentPage}
             totalPages={data.totalPages}
-            collectionName={collectionName} // Pass the collectionName down
+            collectionName={collectionName}
+            view={view}
+            searchTerm={searchTerm}
           />
         </div>
       );
     }
 
-    return <p className="loading-message">No videos found.</p>;
+    if (view === 'search') {
+        return <p className="loading-message">No results found for "{searchTerm}".</p>;
+    }
+
+    return <p className="loading-message">No videos found in this collection.</p>;
   };
 
   return (

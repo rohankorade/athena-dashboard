@@ -3,13 +3,24 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-function PaginationControls({ currentPage, totalPages, collectionName }) {
+function PaginationControls({ currentPage, totalPages, collectionName, view, searchTerm }) {
   if (totalPages <= 1) {
     return null;
   }
 
-  const prevPagePath = `/utilities/stash/${collectionName}/page/${currentPage - 1}`;
-  const nextPagePath = `/utilities/stash/${collectionName}/page/${currentPage + 1}`;
+  let prevPagePath, nextPagePath;
+
+  // Create different links based on whether we are searching or browsing a collection
+  if (view === 'search') {
+    // FIX: Encode the searchTerm to handle spaces and special characters correctly
+    const encodedSearchTerm = encodeURIComponent(searchTerm);
+    prevPagePath = `/utilities/stash/search/${encodedSearchTerm}/page/${currentPage - 1}`;
+    nextPagePath = `/utilities/stash/search/${encodedSearchTerm}/page/${currentPage + 1}`;
+  } else {
+    prevPagePath = `/utilities/stash/${collectionName}/page/${currentPage - 1}`;
+    nextPagePath = `/utilities/stash/${collectionName}/page/${currentPage + 1}`;
+  }
+
 
   return (
     <div className="pagination-controls">

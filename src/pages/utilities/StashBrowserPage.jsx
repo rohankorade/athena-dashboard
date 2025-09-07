@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import StashSidebar from '../../components/StashSidebar';
 import StashContentArea from '../../components/StashContentArea';
+import { preloadAuthenticatedImage } from '../../hooks/useAuthenticatedImage';
 
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -20,22 +21,30 @@ function StashBrowserPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [localSearchTerm, setLocalSearchTerm] = useState('');
 
-  // --- NEW: React Router hooks for navigation and URL parameters ---
   const params = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Extract parameters from the URL. The '*' in the route makes them available under the '*' key.
   const routeParams = (params['*'] || '').split('/');
-  // NEW: Simplified and corrected parsing logic
-  const [view, pageAction, pageNumStr] = routeParams;
-  const collectionName = view !== 'search' && view !== 'dashboard' ? view : null;
-  const searchTerm = view === 'search' ? pageAction : '';
-  const currentPage = pageAction === 'page' ? parseInt(pageNumStr, 10) : 1;
+  const view = routeParams[0] || 'dashboard';
+  let collectionName = null;
+  let searchTerm = '';
+  let currentPage = 1;
+
+  if (view === 'search') {
+    searchTerm = decodeURIComponent(routeParams[1] || '');
+    if (routeParams[2] === 'page' && routeParams[3]) {
+      currentPage = parseInt(routeParams[3], 10) || 1;
+    }
+  } else if (view !== 'dashboard') {
+    collectionName = view;
+    if (routeParams[1] === 'page' && routeParams[2]) {
+      currentPage = parseInt(routeParams[2], 10) || 1;
+    }
+  }
 
   const debouncedSearchTerm = useDebounce(localSearchTerm, 500);
 
-  // --- MODIFIED: Data fetching is now triggered by URL changes ---
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setContentData({});
@@ -50,10 +59,10 @@ function StashBrowserPage() {
         ]);
         setContentData({ stats: await statsRes.json(), recent: await recentRes.json() });
       } else if (view === 'search' && searchTerm) {
-        const res = await fetch(`http://localhost:5000/api/stash/search?q=${searchTerm}`, { headers });
-        setContentData({ videos: await res.json() });
-      } else if (view) { // This now handles collections
-        const res = await fetch(`http://localhost:5000/api/stash/collections/${view}?page=${currentPage}`, { headers });
+        const res = await fetch(`http://localhost:5000/api/stash/search?q=${searchTerm}&page=${currentPage}`, { headers });
+        setContentData(await res.json());
+      } else if (collectionName) {
+        const res = await fetch(`http://localhost:5000/api/stash/collections/${collectionName}?page=${currentPage}`, { headers });
         setContentData(await res.json());
       }
     } catch (error) {
@@ -62,11 +71,9 @@ function StashBrowserPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [view, pageAction, currentPage, searchTerm, collectionName]); // Dependencies are now URL params
+  }, [view, collectionName, searchTerm, currentPage]);
 
-  // --- Initial data load and redirection ---
   useEffect(() => {
-    // If the user lands on the base /stash route, redirect to the dashboard
     if (location.pathname === '/utilities/stash' || location.pathname === '/utilities/stash/') {
         navigate('/utilities/stash/dashboard', { replace: true });
         return;
@@ -85,23 +92,41 @@ function StashBrowserPage() {
     fetchData();
   }, [fetchData, location.pathname, navigate]);
 
-  // --- NEW: Effect to handle search navigation ---
   useEffect(() => {
-    if (debouncedSearchTerm) {
-      navigate(`/utilities/stash/search/${encodeURIComponent(debouncedSearchTerm)}`);
+    // FIX: Only perform navigation actions if the debounced term has changed.
+    // This prevents the effect from firing incorrectly when navigating away from the search page.
+    if (debouncedSearchTerm !== searchTerm) {
+      if (debouncedSearchTerm) {
+        navigate(`/utilities/stash/search/${encodeURIComponent(debouncedSearchTerm)}/page/1`);
+      } else if (view === 'search') {
+        // Only navigate away if the box is cleared WHILE on the search page.
+        navigate('/utilities/stash/dashboard');
+      }
     }
-    // If the search box is cleared while on the search page, go back to dashboard
-    else if (!debouncedSearchTerm && view === 'search') {
-      navigate('/utilities/stash/dashboard');
+  }, [debouncedSearchTerm, searchTerm, view, navigate]);
+  
+  // Sync URL search term to local state for the input box
+  useEffect(() => {
+    setLocalSearchTerm(searchTerm);
+  }, [searchTerm]);
+
+  // Preloading effect (unchanged)
+  useEffect(() => {
+    if (contentData && contentData.videos && contentData.videos.length > 0) {
+      contentData.videos.forEach(video => {
+        if (video.scene_preview) {
+          const preloadUrl = `/api/stash/image?url=${encodeURIComponent(video.scene_preview)}`;
+          preloadAuthenticatedImage(preloadUrl);
+        }
+      });
     }
-  }, [debouncedSearchTerm, navigate, view]);
+  }, [contentData.videos]);
 
 
   return (
     <div className="stash-browser-layout">
       <StashSidebar 
         collections={collections}
-        activeView={view === 'search' ? 'search' : view}
         searchTerm={localSearchTerm}
         onSearchChange={(e) => setLocalSearchTerm(e.target.value)}
       />
@@ -109,7 +134,8 @@ function StashBrowserPage() {
         view={view}
         data={contentData}
         isLoading={isLoading}
-        collectionName={view} // Pass collectionName for pagination links
+        collectionName={collectionName}
+        searchTerm={searchTerm}
       />
     </div>
   );

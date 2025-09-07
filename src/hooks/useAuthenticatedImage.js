@@ -1,3 +1,5 @@
+// src/hooks/useAuthenticatedImage.js
+
 import { useState, useEffect } from 'react';
 
 const useAuthenticatedImage = (url) => {
@@ -58,5 +60,32 @@ const useAuthenticatedImage = (url) => {
 
   return { imageSrc, loading, error };
 };
+
+// --- NEW: Preloading Function ---
+// This function will be called to warm up the cache for a given image URL.
+export const preloadAuthenticatedImage = (url) => {
+  if (!url) {
+    return;
+  }
+
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    console.warn('Authentication token not found, cannot preload image.');
+    return;
+  }
+
+  // We don't need to handle the response, just making the request is enough
+  // to get the image into the server-side and browser cache.
+  fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  }).catch(err => {
+    // We can log errors, but we don't need to do anything else.
+    // The user experience will just be the same as before if preloading fails.
+    console.error(`Failed to preload image: ${url}`, err);
+  });
+};
+
 
 export default useAuthenticatedImage;
