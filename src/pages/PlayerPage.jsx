@@ -14,11 +14,6 @@ function PlayerPage() {
   if (!videoUrl) {
     return (
       <div className="player-page-container">
-        <div className="player-header">
-          <button onClick={() => navigate(-1)} className="player-back-button">
-            &larr; Back
-          </button>
-        </div>
         <div className="player-error-message">
           <h1>Error: Video URL not found.</h1>
         </div>
@@ -29,9 +24,6 @@ function PlayerPage() {
   return (
     <div className="player-page-container">
       <header className="player-header">
-        <button onClick={() => navigate(-1)} className="player-back-button">
-          &larr; Back
-        </button>
         <h1 className="player-title">{videoTitle}</h1>
       </header>
       
