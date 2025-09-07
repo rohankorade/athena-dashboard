@@ -36,7 +36,7 @@ function StashContentArea({ view, data, isLoading, onPageChange }) {
     // direct children of the main container.
     if (data.videos && data.videos.length > 0) {
       return (
-        <>
+        <div className="collection-view-wrapper">
           <div className="video-grid">
             {data.videos.map(video => <StashVideoCard key={video._id} video={video} />)}
           </div>
@@ -45,7 +45,7 @@ function StashContentArea({ view, data, isLoading, onPageChange }) {
             totalPages={data.totalPages}
             onPageChange={onPageChange}
           />
-        </>
+        </div>
       );
     }
 
