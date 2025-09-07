@@ -92,18 +92,34 @@ function StashBrowserPage() {
     fetchData();
   }, [fetchData, location.pathname, navigate]);
 
+  const isInitialMount = React.useRef(true);
+  const prevLocationKey = React.useRef(location.key);
+
   useEffect(() => {
-    // FIX: Only perform navigation actions if the debounced term has changed.
-    // This prevents the effect from firing incorrectly when navigating away from the search page.
+    // Don't run on the very first render of the component instance.
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      prevLocationKey.current = location.key; // Make sure ref is up to date
+      return;
+    }
+
+    // If the location key has changed, it's a navigation event. Don't run search logic.
+    // React Router gives each location a unique key. This is the most reliable
+    // way to detect a navigation event vs. a simple state-change re-render.
+    if (prevLocationKey.current !== location.key) {
+      prevLocationKey.current = location.key; // Update key and bail.
+      return;
+    }
+
+    // If we get here, it's a state change on the same page (e.g., user typing).
     if (debouncedSearchTerm !== searchTerm) {
       if (debouncedSearchTerm) {
         navigate(`/utilities/stash/search/${encodeURIComponent(debouncedSearchTerm)}/page/1`);
       } else if (view === 'search') {
-        // Only navigate away if the box is cleared WHILE on the search page.
         navigate('/utilities/stash/dashboard');
       }
     }
-  }, [debouncedSearchTerm, searchTerm, view, navigate]);
+  }, [debouncedSearchTerm, searchTerm, view, navigate, location.key]);
   
   // Sync URL search term to local state for the input box
   useEffect(() => {
