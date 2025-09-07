@@ -476,43 +476,46 @@ stashRouter.get('/collections/:collectionName', async (req, res) => {
     try {
         const { collectionName } = req.params;
         const page = parseInt(req.query.page) || 1;
-        const limit = 20;
+        const limit = 15;
         const skip = (page - 1) * limit;
 
         const StashModel = stashDb.model(collectionName, StashVideoSchema, collectionName);
         const allVideos = await StashModel.find({}).lean();
-        
 
-        const extractDate = (title) => {
-            const match = title.match(/(\d{2})\.(\d{2})\.(\d{2})/);
-            if (match) {
-                const [_, year, month, day] = match;
-                // Add "20" to the year, and subtract 1 from month for 0-indexing
-                return new Date(`20${year}`, month - 1, day); 
+        // New, more robust date parsing function
+        const parseDateFromDoc = (doc) => {
+            // Priority 1: Use the dedicated scene_date field (DD-MM-YYYY)
+            if (doc.scene_date) {
+                try {
+                    const [day, month, year] = doc.scene_date.split('-');
+                    const fullYear = year.length === 4 ? year : `20${year}`;
+                    const date = new Date(`${fullYear}-${month}-${day}`);
+                    if (!isNaN(date.getTime())) return date;
+                } catch (e) { /* Fall through */ }
             }
-            return null; // Return null if no date pattern is found
+
+            // Priority 2: Fallback to parsing the file_title (YY.MM.DD)
+            if (doc.file_title) {
+                const match = doc.file_title.match(/(\d{2})\.(\d{2})\.(\d{2})/);
+                if (match) {
+                    const [_, year, month, day] = match;
+                    const date = new Date(`20${year}`, month - 1, day);
+                    if (!isNaN(date.getTime())) return date;
+                }
+            }
+            
+            // Priority 3: Use the MongoDB timestamp
+            return doc.createdAt ? new Date(doc.createdAt) : null;
         };
 
         allVideos.sort((a, b) => {
-            const dateA = extractDate(a.title);
-            const dateB = extractDate(b.title);
+            const dateA = parseDateFromDoc(a);
+            const dateB = parseDateFromDoc(b);
 
-            if (dateA && dateB) {
-                return dateA - dateB; // Sorts oldest to latest
-            }
-            // If only one has a date, we can decide where to put it.
-            // Let's put videos with dates first.
-            if (dateA) return -1; 
+            if (dateA && dateB) return dateA - dateB; // Sort oldest to latest
+            if (dateA) return -1; // Videos with dates come before those without
             if (dateB) return 1;
-
-            // If neither has a date, fall back to sorting by the original 'createdAt' timestamp
-            // This requires your documents to have timestamps, which the new schema provides.
-            if (a.createdAt && b.createdAt) {
-                return new Date(a.createdAt) - new Date(b.createdAt);
-            }
-
-            // Final fallback to title sorting if no dates or timestamps are present
-            return a.title.localeCompare(b.title);
+            return 0; // Keep original order if neither has a date
         });
         
         const totalVideos = allVideos.length;
@@ -538,18 +541,59 @@ stashRouter.get('/search', async (req, res) => {
         let searchResults = [];
 
         for (const col of collections) {
-            const StashModel = stashDb.model(col.name, StashVideoSchema);
+            const StashModel = stashDb.model(col.name, StashVideoSchema, col.name);
             const results = await StashModel
-                .find({ title: { $regex: q, $options: 'i' } })
+                .find({ scene_title: { $regex: q, $options: 'i' } }) // Search scene_title now
                 .limit(10)
                 .lean();
             searchResults.push(...results);
         }
         
-        searchResults.sort((a, b) => a.title.localeCompare(b.title));
+        searchResults.sort((a, b) => a.scene_title.localeCompare(b.scene_title));
         res.json(searchResults.slice(0, 50));
     } catch (error) {
         res.status(500).json({ message: 'Error during stash search', error });
+    }
+});
+
+// GET /api/stash/dashboard/stats
+stashRouter.get('/dashboard/stats', async (req, res) => {
+    try {
+        const collections = await stashDb.db.listCollections().toArray();
+        let totalVideos = 0;
+        for (const col of collections) {
+            totalVideos += await stashDb.db.collection(col.name).countDocuments();
+        }
+        res.json({
+            totalCollections: collections.length,
+            totalVideos: totalVideos
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching stash stats', error });
+    }
+});
+
+// GET /api/stash/dashboard/recent
+stashRouter.get('/dashboard/recent', async (req, res) => {
+    try {
+        const collections = await stashDb.db.listCollections().toArray();
+        let recentVideos = [];
+
+        for (const col of collections) {
+            const StashModel = stashDb.model(col.name, StashVideoSchema, col.name);
+            const videos = await StashModel.find({})
+                .sort({ createdAt: -1 }) // Sort by newest
+                .limit(5) // Get the top 5 from each collection
+                .lean();
+            recentVideos.push(...videos);
+        }
+        
+        // Sort the aggregated results to find the absolute newest
+        recentVideos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        res.json(recentVideos.slice(0, 5)); // Return the top 5 overall
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching recent videos', error });
     }
 });
 

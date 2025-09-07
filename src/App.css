@@ -1972,92 +1972,337 @@ p.time-taken strong {
 }
 
 
+/* src/App.css */
 
 /* ==========================================================================
-   Stash Utility Styles
+   Stash Browser - New Elegant Design (Definitive Positioning Fix)
    ========================================================================== */
 
-/* --- Search Bar --- */
-.search-bar-container {
-  padding-top: 1rem;
-}
-
-/* --- Video Card Layout --- */
-.stash-video-card {
+.stash-browser-layout {
   display: flex;
-  background-color: #fff;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 1rem 1.5rem;
-  margin-bottom: 1rem;
-  transition: box-shadow 0.2s, border-color 0.2s;
-  align-items: center; /* Vertically align items */
-}
-.stash-video-card:hover {
-  border-color: #cde4ff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  height: 100%;
+  width: 100%;
+  background-color: #121212;
 }
 
-.stash-card-main {
-  flex-grow: 1; /* Takes up most of the space */
-  min-width: 0;
-}
-
-.stash-card-actions {
-  flex-shrink: 0; /* Prevents buttons from shrinking */
+/* --- Sidebar --- */
+.stash-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background-color: #181818;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  width: 120px;
-  margin-left: 1rem;
+  border-right: 1px solid #282828;
 }
 
-/* --- Video Card Typography --- */
-.stash-video-title {
+.sidebar-search-container {
+  padding: 1rem;
+  border-bottom: 1px solid #282828;
+}
+
+.sidebar-search-container input {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #282828;
+  border: 1px solid #404040;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.sidebar-nav {
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  padding: 1rem 0;
+  margin: 0;
+}
+
+.sidebar-nav li {
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  color: #b3b3b3;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-nav li:hover {
+  background-color: #282828;
+  color: #fff;
+}
+
+.sidebar-nav li.active {
+  background-color: #333;
+  color: #fff;
+  border-left: 3px solid #1db954;
+  padding-left: calc(1.5rem - 3px);
+}
+
+.collection-count {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+/* --- Content Area (POSITIONING FIX) --- */
+.stash-content-area {
+  flex-grow: 1;
+  min-height: 0;
+  position: relative; /* Establish positioning context */
+}
+
+.dashboard-view-content {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  overflow-y: auto;
+}
+
+.collection-view-wrapper {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+
+.dashboard-view-content h2 {
+  color: white;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  padding: 2rem 2rem 0 2rem;
+}
+
+.video-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 65px; /* Reserve 65px for the pagination bar */
+  overflow-y: auto;
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  align-content: start;
+}
+
+.stats-grid {
+    padding: 2rem;
+}
+
+.pagination-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 65px;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  border-top: 1px solid #282828;
+  color: #b3b3b3;
+  background-color: #121212;
+}
+
+.loading-message {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
   font-size: 1.2rem;
-  font-weight: 600;
-  margin: 0 0 0.25rem 0;
-  color: #212529;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis; /* Adds '...' if title is too long */
 }
 
-.stash-video-filename {
-  font-size: 0.85rem;
-  color: #6c757d;
-  margin: 0 0 0.75rem 0;
+/* --- Stash Video Card --- */
+.stash-card {
+  background-color: #181818;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  border: 1px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.stash-card:hover {
+  border-color: #404040;
+  transform: translateY(-4px);
+}
+
+.stash-card-visual {
+  aspect-ratio: 16/10;
+  background-color: #000;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.stash-card-thumbnail, .stash-card-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.stash-card-preview {
+  opacity: 0;
+}
+
+.stash-card:hover .stash-card-preview {
+  opacity: 1;
+}
+
+.stash-card:hover .stash-card-thumbnail {
+  opacity: 0;
+}
+
+.stash-card-info {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.stash-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* --- Metadata Pills --- */
-.stash-metadata-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+.stash-card-performers {
+  font-size: 0.85rem;
+  color: #b3b3b3;
+  margin: 0.2rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
 }
 
-.pill-item {
-  background-color: #e9ecef;
-  color: #495057;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-/* --- Pagination --- */
-.pagination-controls {
+.stash-card-metadata {
   display: flex;
-  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: #888;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  margin-top: auto; /* Pushes it to the bottom */
 }
 
-.pagination-controls button {
-    padding: 0.5rem 1rem;
+.collection-tag {
+  background-color: #333;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #b3b3b3;
+}
+
+.stash-card-actions {
+  flex-shrink: 0;
+  min-height: 40px;
+  background-color: #282828;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.75rem;
+}
+
+.stash-card-actions button {
+  background: none;
+  border: none;
+  color: #b3b3b3;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color 0.2s;
+}
+.stash-card-actions button:hover { color: #fff; }
+
+.play-button {
+  font-weight: bold;
+  font-size: 0.9rem !important;
+  color: #fff !important;
+}
+
+/* ==========================================================================
+   Clean Video Player Page Styles (New)
+   ========================================================================== */
+
+.player-page-container {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  background-color: #121212; /* Dark background */
+  color: #e0e0e0;
+  overflow: hidden; /* Prevent scrolling on the page itself */
+}
+
+.player-header {
+  display: flex;
+  align-items: center;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  padding-top: 1.5rem;
+  flex-shrink: 0;
+  background-color: rgba(0,0,0,0.2);
+  gap: 1.5rem;
+}
+
+.player-back-button {
+  background: none;
+  border: 1px solid #444;
+  color: #e0e0e0;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.player-back-button:hover {
+  background-color: #333;
+}
+
+.player-title {
+  font-size: 1.2rem;
+  margin: 0;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-video-wrapper {
+  flex-grow: 1;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  min-height: 0;
+}
+
+.player-video-container {
+  width: 100%;
+  height: 100%;
+  max-width: 1400px; /* You can adjust this max-width */
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.player-error-message {
+  flex-grow: 1;
+  display: grid;
+  place-items: center;
+  text-align: center;
 }

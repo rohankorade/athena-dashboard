@@ -8,7 +8,7 @@ const stashVideoSchema = new mongoose.Schema({
   videoType: { type: String },
   fileLink: { type: String, required: true },
   associatedAccount: { type: String },
-  collection: { type: String, required: true },
+  collectionName: { type: String, required: true },
 }, { 
   timestamps: true,
 });

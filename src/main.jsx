@@ -16,6 +16,7 @@ import GeneralStudies from './pages/GeneralStudies.jsx';
 import Sociology from './pages/Sociology.jsx';
 import AnswerWriting from './pages/AnswerWriting.jsx';
 import NoteView from './pages/NoteView.jsx';
+import PlayerPage from './pages/PlayerPage.jsx';
 
 // Utilities
 import ParticipantLayout from './components/ParticipantLayout.jsx';
@@ -32,7 +33,7 @@ import RealTimeAnalysisPage from './pages/utilities/RealTimeAnalysisPage.jsx';
 import PracticeTestList from './pages/utilities/practice/PracticeTestList.jsx';
 import PracticePage from './pages/utilities/practice/PracticePage.jsx';
 import PracticeResultPage from './pages/utilities/practice/PracticeResultPage.jsx';
-import StashPage from './pages/utilities/StashPage.jsx';
+import StashBrowserPage from './pages/utilities/StashBrowserPage.jsx';
 import StashCollectionPage from './pages/utilities/StashCollectionPage.jsx';
 
 // Authentication
@@ -51,6 +52,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="/local-mock/lobby/:sessionId" element={<LobbyView />} />
             <Route path="/exam/:attemptId" element={<ExamPage />} />
             <Route path="/results/:attemptId" element={<ResultsPage />} />
+            <Route path="/player" element={<PlayerPage />} />
           </Route>
 
           {/* --- Login Route (Public) --- */}
@@ -79,7 +81,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="utilities/sessions" element={<SessionListPage />} />
               <Route path="utilities/sessions/:sessionId" element={<SessionAttemptsPage />} />
               <Route path="utilities/sessions/:sessionId/attempts/:attemptId" element={<RealTimeAnalysisPage />} />
-              <Route path="utilities/stash" element={<StashPage />} />
+              <Route path="utilities/stash" element={<StashBrowserPage />} />
               <Route path="utilities/stash/:collectionName" element={<StashCollectionPage />} />
             </Route>
           </Route>
