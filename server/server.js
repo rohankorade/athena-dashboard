@@ -22,6 +22,12 @@ const ExamAttemptSchema = require('./models/ExamAttempt');
 const PracticeAttemptSchema = require('./models/PracticeAttempt');
 const StashVideoSchema = require('./models/StashVideo');
 
+// Ensure the cache directory exists
+const cacheDir = path.join(__dirname, 'cache');
+if (!fs.existsSync(cacheDir)) {
+    fs.mkdirSync(cacheDir, { recursive: true });
+}
+
 // --- Express App Setup ---
 const app = express();
 const server = http.createServer(app);
