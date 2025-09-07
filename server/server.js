@@ -610,7 +610,9 @@ stashRouter.get('/dashboard/recent', async (req, res) => {
 // GET /api/stash/image - Caching proxy for images
 stashRouter.get('/image', async (req, res) => {
     const { url } = req.query;
+    console.log(`[Image Cache] Received request for URL: ${url}`);
     if (!url) {
+        console.error('[Image Cache] Error: URL is required.');
         return res.status(400).send({ message: 'URL query parameter is required.' });
     }
 
@@ -620,12 +622,15 @@ stashRouter.get('/image', async (req, res) => {
         const extension = path.extname(new URL(url).pathname);
         const fileName = `${hash}${extension}`;
         const cachePath = path.join(__dirname, 'cache', fileName);
+        console.log(`[Image Cache] Cache path determined: ${cachePath}`);
 
         // Check if the file already exists in the cache
         if (fs.existsSync(cachePath)) {
+            console.log(`[Image Cache] HIT: Serving from cache: ${cachePath}`);
             return res.sendFile(cachePath);
         }
 
+        console.log(`[Image Cache] MISS: Downloading from URL: ${url}`);
         // If not in cache, download it
         const response = await axios({
             method: 'GET',
@@ -638,19 +643,20 @@ stashRouter.get('/image', async (req, res) => {
         response.data.pipe(writer);
 
         writer.on('finish', () => {
+            console.log(`[Image Cache] SUCCESS: Saved and sending file: ${cachePath}`);
             // Once saved, send the file
             res.sendFile(cachePath);
         });
 
         writer.on('error', (err) => {
-            console.error('Failed to write image to cache:', err);
+            console.error(`[Image Cache] FAILED to write to cache: ${err.message}`);
             // Clean up the broken file
             fs.unlink(cachePath, () => {});
             res.status(500).send({ message: 'Failed to cache image.' });
         });
 
     } catch (error) {
-        console.error('Error proxying image:', error.message);
+        console.error(`[Image Cache] FAILED to download image: ${error.message}`);
         res.status(500).send({ message: 'Error fetching image.' });
     }
 });
