@@ -99,14 +99,18 @@ function StashBrowserPage() {
   useEffect(() => {
     const trimmedDebounced = debouncedInputValue.trim();
     
-    if (trimmedDebounced !== searchTerm) {
+    // The check `inputValue === trimmedDebounced` is crucial. It prevents this effect
+    // from firing with a stale debounced value when navigating away from the search view.
+    // When a nav link is clicked, `inputValue` is cleared instantly, but `debouncedInputValue`
+    // is not. This check ensures we only navigate when the input has settled.
+    if (trimmedDebounced !== searchTerm && inputValue === trimmedDebounced) {
       if (trimmedDebounced) {
         navigate(`/utilities/stash/search/${encodeURIComponent(trimmedDebounced)}/page/1`);
       } else if (searchTerm) {
         navigate('/utilities/stash/dashboard');
       }
     }
-  }, [debouncedInputValue, searchTerm, navigate]);
+  }, [debouncedInputValue, searchTerm, navigate, inputValue]);
 
   useEffect(() => {
     if (contentData && contentData.videos && contentData.videos.length > 0) {
