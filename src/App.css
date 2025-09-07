@@ -2060,11 +2060,16 @@ p.time-taken strong {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .collection-view-wrapper {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard-view-content h2 {
@@ -2075,12 +2080,7 @@ p.time-taken strong {
 }
 
 .video-grid {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 65px; /* Reserve 65px for the pagination bar */
-  overflow-y: auto;
+  flex-grow: 1;
   padding: 2rem;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -2093,7 +2093,7 @@ p.time-taken strong {
 }
 
 .pagination-controls {
-  position: absolute;
+  position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
@@ -2106,6 +2106,7 @@ p.time-taken strong {
   border-top: 1px solid #282828;
   color: #b3b3b3;
   background-color: #121212;
+  flex-shrink: 0;
 }
 
 .loading-message {
