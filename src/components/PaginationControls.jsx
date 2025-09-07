@@ -1,31 +1,37 @@
 // src/components/PaginationControls.jsx
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 
-function PaginationControls({ currentPage, totalPages, onPageChange }) {
+function PaginationControls({ currentPage, totalPages, collectionName }) {
   if (totalPages <= 1) {
-    return null; // Don't show controls if there's only one page
+    return null;
   }
+
+  const prevPagePath = `/utilities/stash/${collectionName}/page/${currentPage - 1}`;
+  const nextPagePath = `/utilities/stash/${collectionName}/page/${currentPage + 1}`;
 
   return (
     <div className="pagination-controls">
-      <button 
-        onClick={() => onPageChange(currentPage - 1)} 
-        disabled={currentPage <= 1}
-        className="button-modern-gray"
-      >
-        &larr; Previous Page
-      </button>
+      {currentPage > 1 ? (
+        <Link to={prevPagePath} className="button-modern-gray">
+          &larr; Previous Page
+        </Link>
+      ) : (
+        <button disabled className="button-modern-gray">&larr; Previous Page</button>
+      )}
+      
       <span>
         Page {currentPage} of {totalPages}
       </span>
-      <button 
-        onClick={() => onPageChange(currentPage + 1)} 
-        disabled={currentPage >= totalPages}
-        className="button-modern-gray"
-      >
-        Next Page &rarr;
-      </button>
+
+      {currentPage < totalPages ? (
+        <Link to={nextPagePath} className="button-modern-gray">
+          Next Page &rarr;
+        </Link>
+      ) : (
+        <button disabled className="button-modern-gray">Next Page &rarr;</button>
+      )}
     </div>
   );
 }

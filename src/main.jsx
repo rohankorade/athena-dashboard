@@ -81,8 +81,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="utilities/sessions" element={<SessionListPage />} />
               <Route path="utilities/sessions/:sessionId" element={<SessionAttemptsPage />} />
               <Route path="utilities/sessions/:sessionId/attempts/:attemptId" element={<RealTimeAnalysisPage />} />
-              <Route path="utilities/stash" element={<StashBrowserPage />} />
-              <Route path="utilities/stash/:collectionName" element={<StashCollectionPage />} />
+              {/* This single dynamic route will handle all views for the Stash utility */}
+              <Route path="utilities/stash/*" element={<StashBrowserPage />} />
             </Route>
           </Route>
         </Routes>

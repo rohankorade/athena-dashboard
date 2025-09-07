@@ -4,7 +4,8 @@ import React from 'react';
 import StashVideoCard from './StashVideoCard';
 import PaginationControls from './PaginationControls';
 
-function StashContentArea({ view, data, isLoading, onPageChange }) {
+// The collectionName prop is added here
+function StashContentArea({ view, data, isLoading, collectionName }) {
 
   const renderContent = () => {
     if (isLoading) {
@@ -13,6 +14,7 @@ function StashContentArea({ view, data, isLoading, onPageChange }) {
 
     if (view === 'dashboard' && data.stats) {
       return (
+        // ... (dashboard view remains the same)
         <div className="dashboard-view-content">
           <div className="stats-grid">
               <div className="stat-item">
@@ -32,8 +34,6 @@ function StashContentArea({ view, data, isLoading, onPageChange }) {
       );
     }
     
-    // The collection view now returns a Fragment, making the grid and pagination
-    // direct children of the main container.
     if (data.videos && data.videos.length > 0) {
       return (
         <div className="collection-view-wrapper">
@@ -43,7 +43,7 @@ function StashContentArea({ view, data, isLoading, onPageChange }) {
           <PaginationControls 
             currentPage={data.currentPage}
             totalPages={data.totalPages}
-            onPageChange={onPageChange}
+            collectionName={collectionName} // Pass the collectionName down
           />
         </div>
       );

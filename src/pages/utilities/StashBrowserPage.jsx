@@ -1,6 +1,7 @@
 // src/pages/utilities/StashBrowserPage.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import StashSidebar from '../../components/StashSidebar';
 import StashContentArea from '../../components/StashContentArea';
 
@@ -15,16 +16,28 @@ function useDebounce(value, delay) {
 
 function StashBrowserPage() {
   const [collections, setCollections] = useState([]);
-  const [activeView, setActiveView] = useState('dashboard');
   const [contentData, setContentData] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
 
-  const fetchData = useCallback(async (view, page) => {
+  // --- NEW: React Router hooks for navigation and URL parameters ---
+  const params = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Extract parameters from the URL. The '*' in the route makes them available under the '*' key.
+  const routeParams = (params['*'] || '').split('/');
+  const [view, collectionName, pageOrAction, pageNumber] = routeParams;
+
+  const currentPage = pageOrAction === 'page' ? parseInt(pageNumber, 10) : 1;
+  const searchTerm = view === 'search' ? collectionName : '';
+
+  const debouncedSearchTerm = useDebounce(localSearchTerm, 500);
+
+  // --- MODIFIED: Data fetching is now triggered by URL changes ---
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
-    setContentData({}); // Clear previous data to prevent flash of old content
+    setContentData({});
     const token = localStorage.getItem('authToken');
     const headers = { 'Authorization': `Bearer ${token}` };
     
@@ -35,22 +48,29 @@ function StashBrowserPage() {
           fetch('http://localhost:5000/api/stash/dashboard/recent', { headers })
         ]);
         setContentData({ stats: await statsRes.json(), recent: await recentRes.json() });
-      } else if (view === 'searchResults') {
-        const res = await fetch(`http://localhost:5000/api/stash/search?q=${debouncedSearchTerm}`, { headers });
+      } else if (view === 'search' && searchTerm) {
+        const res = await fetch(`http://localhost:5000/api/stash/search?q=${searchTerm}`, { headers });
         setContentData({ videos: await res.json() });
-      } else {
-        const res = await fetch(`http://localhost:5000/api/stash/collections/${view}?page=${page}`, { headers });
+      } else if (view) { // This now handles collections
+        const res = await fetch(`http://localhost:5000/api/stash/collections/${view}?page=${currentPage}`, { headers });
         setContentData(await res.json());
       }
     } catch (error) {
       console.error("Failed to fetch content:", error);
-      setContentData({ videos: [] }); // Set to empty on error
+      setContentData({ videos: [] });
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearchTerm]);
+  }, [view, collectionName, currentPage, searchTerm]); // Dependencies are now URL params
 
+  // --- Initial data load and redirection ---
   useEffect(() => {
+    // If the user lands on the base /stash route, redirect to the dashboard
+    if (location.pathname === '/utilities/stash' || location.pathname === '/utilities/stash/') {
+        navigate('/utilities/stash/dashboard', { replace: true });
+        return;
+    }
+
     const fetchCollections = async () => {
       const token = localStorage.getItem('authToken');
       const headers = { 'Authorization': `Bearer ${token}` };
@@ -59,46 +79,36 @@ function StashBrowserPage() {
         setCollections(await res.json());
       } catch (error) { console.error("Failed to fetch collections:", error); }
     };
-    fetchCollections();
-    fetchData('dashboard', 1); // Fetch initial dashboard view
-  }, []); // Runs only once on mount
 
+    fetchCollections();
+    fetchData();
+  }, [fetchData, location.pathname, navigate]);
+
+  // --- NEW: Effect to handle search navigation ---
   useEffect(() => {
     if (debouncedSearchTerm) {
-      setActiveView('searchResults');
-      fetchData('searchResults');
-    } else if (searchTerm === '' && activeView === 'searchResults') {
-      setActiveView('dashboard');
-      fetchData('dashboard');
+      navigate(`/utilities/stash/search/${encodeURIComponent(debouncedSearchTerm)}`);
     }
-  }, [debouncedSearchTerm, searchTerm, activeView, fetchData]);
+    // If the search box is cleared while on the search page, go back to dashboard
+    else if (!debouncedSearchTerm && view === 'search') {
+      navigate('/utilities/stash/dashboard');
+    }
+  }, [debouncedSearchTerm, navigate, view]);
 
-  const handleSelectView = (viewName) => {
-    setSearchTerm('');
-    setActiveView(viewName);
-    setCurrentPage(1);
-    fetchData(viewName, 1);
-  };
-
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-    fetchData(activeView, newPage);
-  };
 
   return (
     <div className="stash-browser-layout">
       <StashSidebar 
         collections={collections}
-        activeView={activeView}
-        onSelectView={handleSelectView}
-        searchTerm={searchTerm}
-        onSearchChange={(e) => setSearchTerm(e.target.value)}
+        activeView={view === 'search' ? 'search' : view}
+        searchTerm={localSearchTerm}
+        onSearchChange={(e) => setLocalSearchTerm(e.target.value)}
       />
       <StashContentArea 
-        view={activeView}
+        view={view}
         data={contentData}
         isLoading={isLoading}
-        onPageChange={handlePageChange}
+        collectionName={view} // Pass collectionName for pagination links
       />
     </div>
   );
