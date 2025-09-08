@@ -17,11 +17,11 @@ function StashContentArea({ view, data, isLoading, collectionName, searchTerm })
           <div className="stats-grid">
               <div className="stat-item">
                   <span className="stat-value">{data.stats.totalVideos}</span>
-                  <span className="stat-label">Total Videos</span>
+                  <span className="stat-label">Videos</span>
               </div>
               <div className="stat-item">
                   <span className="stat-value">{data.stats.totalCollections}</span>
-                  <span className="stat-label">Total Collections</span>
+                  <span className="stat-label">Collections</span>
               </div>
           </div>
           <h2>Recently Added</h2>
