@@ -6,6 +6,8 @@ const useAuthenticatedImage = (url) => {
   const [imageSrc, setImageSrc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // --- NEW: State to specifically track if the image is corrupt/invalid ---
+  const [isCorrupt, setIsCorrupt] = useState(false);
 
   useEffect(() => {
     if (!url) {
@@ -18,6 +20,7 @@ const useAuthenticatedImage = (url) => {
     const fetchImage = async () => {
       setLoading(true);
       setError(null);
+      setIsCorrupt(false); // Reset on new fetch
 
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -32,6 +35,12 @@ const useAuthenticatedImage = (url) => {
             'Authorization': `Bearer ${token}`
           }
         });
+
+        // --- MODIFIED: Handle server-side verification failure ---
+        if (response.status === 502) {
+            setIsCorrupt(true);
+            throw new Error(`Server indicated corrupt source image.`);
+        }
 
         if (!response.ok) {
           throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
@@ -56,36 +65,28 @@ const useAuthenticatedImage = (url) => {
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [url]); // Rerun effect if URL changes
+  }, [url]);
 
-  return { imageSrc, loading, error };
+  // Return the new state
+  return { imageSrc, loading, error, isCorrupt };
 };
 
-// --- NEW: Preloading Function ---
-// This function will be called to warm up the cache for a given image URL.
 export const preloadAuthenticatedImage = (url) => {
   if (!url) {
     return;
   }
-
   const token = localStorage.getItem('authToken');
   if (!token) {
     console.warn('Authentication token not found, cannot preload image.');
     return;
   }
-
-  // We don't need to handle the response, just making the request is enough
-  // to get the image into the server-side and browser cache.
   fetch(url, {
     headers: {
       'Authorization': `Bearer ${token}`
     }
   }).catch(err => {
-    // We can log errors, but we don't need to do anything else.
-    // The user experience will just be the same as before if preloading fails.
     console.error(`Failed to preload image: ${url}`, err);
   });
 };
-
 
 export default useAuthenticatedImage;

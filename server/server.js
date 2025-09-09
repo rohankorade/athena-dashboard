@@ -638,56 +638,52 @@ stashRouter.get('/dashboard/recent', async (req, res) => {
 // GET /api/stash/image - Caching proxy for images
 stashRouter.get('/image', async (req, res) => {
     const { url } = req.query;
-    console.log(`[Image Cache] Received request for URL: ${url}`);
     if (!url) {
-        console.error('[Image Cache] Error: URL is required.');
         return res.status(400).send({ message: 'URL query parameter is required.' });
     }
 
     try {
-        // Create a unique, safe filename from the URL
         const hash = crypto.createHash('md5').update(url).digest('hex');
+        // --- NEW: Get the original file extension ---
         const extension = path.extname(new URL(url).pathname);
-        const fileName = `${hash}${extension}`;
+        // --- NEW: Use the original extension for the cache file ---
+        const fileName = `${hash}${extension || '.jpg'}`; // Default to .jpg if no extension
         const cachePath = path.join(__dirname, 'cache', fileName);
-        console.log(`[Image Cache] Cache path determined: ${cachePath}`);
 
-        // Check if the file already exists in the cache
         if (fs.existsSync(cachePath)) {
+            // No verification needed for existing cache items in this version
+            // For a more robust solution, we could add it here too.
             console.log(`[Image Cache] HIT: Serving from cache: ${cachePath}`);
             return res.sendFile(cachePath);
         }
 
         console.log(`[Image Cache] MISS: Downloading from URL: ${url}`);
-        // If not in cache, download it
         const response = await axios({
             method: 'GET',
             url: url,
-            responseType: 'stream'
+            responseType: 'arraybuffer'
         });
 
-        // Pipe the image data to a file in the cache directory
-        const writer = fs.createWriteStream(cachePath);
-        response.data.pipe(writer);
-        
-        // Wait for the writer to finish saving the file to the cache.
-        writer.on('finish', () => {
-            console.log(`[Image Cache] SUCCESS: Saved and now sending file: ${cachePath}`);
-            // Once saved, THEN send the file as the response.
-            res.sendFile(cachePath);
-        });
+        const buffer = Buffer.from(response.data);
 
-        // Handle errors during the writing process.
-        writer.on('error', (err) => {
-            console.error(`[Image Cache] FAILED to write to cache: ${err.message}`);
-            // Clean up the broken file if it exists.
-            fs.unlink(cachePath, () => {});
-            res.status(500).send({ message: 'Failed to cache image.' });
-        });
+        // --- NEW: Conditional Verification Step ---
+        // Only perform the strict check if the source file is a .webp
+        if (extension.toLowerCase() === '.webp') {
+            if (buffer.length < 12 || buffer.toString('ascii', 0, 4) !== 'RIFF' || buffer.toString('ascii', 8, 12) !== 'WEBP') {
+                console.error(`[Image Cache] FAILED VERIFICATION: Downloaded file is not a valid WEBP image. URL: ${url}`);
+                return res.status(502).json({ message: 'Invalid or corrupt WEBP file from source.' });
+            }
+            console.log(`[Image Cache] SUCCESS: WEBP file verified.`);
+        }
+
+        // If valid (or not a WEBP), write to cache and send to the client
+        await fs.promises.writeFile(cachePath, buffer);
+        console.log(`[Image Cache] Cached and now sending file: ${cachePath}`);
+        res.sendFile(cachePath);
 
     } catch (error) {
-        console.error(`[Image Cache] FAILED to download image: ${error.message}`);
-        res.status(500).send({ message: 'Error fetching image.' });
+        console.error(`[Image Cache] FAILED to download or process image: ${error.message}`);
+        res.status(500).send({ message: 'Error fetching image from source.' });
     }
 });
 

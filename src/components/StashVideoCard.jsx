@@ -1,9 +1,9 @@
 // src/components/StashVideoCard.jsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthenticatedImage from '../hooks/useAuthenticatedImage';
-import Highlight from './Highlight'; // Import the new component
+import Highlight from './Highlight';
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
@@ -16,27 +16,33 @@ const formatDate = (dateString) => {
   }
 };
 
-// A small component to handle the authenticated image loading
-const AuthenticatedImage = ({ src, ...props }) => {
+// --- MODIFIED SUB-COMPONENT ---
+// It now accepts a 'showPlaceholder' prop to control its loading behavior.
+const AuthenticatedImage = ({ src, showPlaceholder = false, ...props }) => {
   const apiUrl = src ? `/api/stash/image?url=${encodeURIComponent(src)}` : null;
-  const { imageSrc, loading, error } = useAuthenticatedImage(apiUrl);
+  const { imageSrc, loading, error, isCorrupt } = useAuthenticatedImage(apiUrl);
 
+  // If the server says the image is bad, render nothing.
+  if (isCorrupt) {
+    return null;
+  }
+
+  // If loading, decide whether to show a placeholder or nothing at all.
   if (loading) {
-    // You can return a placeholder or spinner here
-    return <div className="image-placeholder" style={{ aspectRatio: '16/9', backgroundColor: '#333' }}></div>;
+    return showPlaceholder ? <div className="image-placeholder"></div> : null;
   }
 
   if (error) {
-    // You can return an error indicator here
-    return <div className="image-placeholder" style={{ aspectRatio: '16/9', backgroundColor: '#333' }}>Error</div>;
+    // Only show an error if a placeholder is also requested.
+    return showPlaceholder ? <div className="image-placeholder">Error</div> : null;
   }
 
-  return imageSrc ? <img src={imageSrc} {...props} /> : <div className="image-placeholder" style={{ aspectRatio: '16/9', backgroundColor: '#333' }}></div>;
+  return imageSrc ? <img src={imageSrc} {...props} /> : null;
 };
 
-
-function StashVideoCard({ video, searchTerm }) { // Accept searchTerm prop
+function StashVideoCard({ video, searchTerm }) {
   const navigate = useNavigate();
+  const [isHovering, setIsHovering] = useState(false);
 
   const handlePlay = () => {
     if (video.file_video_type === 'MP4' && video.file_link.includes('/file/')) {
@@ -53,21 +59,28 @@ function StashVideoCard({ video, searchTerm }) { // Accept searchTerm prop
       .then(() => alert('Link copied!'))
       .catch(err => console.error('Failed to copy: ', err));
   };
-  
+
   const handleSource = () => {
     window.open(video.scene_url, '_blank', 'noopener,noreferrer');
   };
 
   return (
-    <div className="stash-card">
+    <div
+      className="stash-card"
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
       <div className="stash-card-visual">
+        {/* The cover image shows a placeholder while it loads */}
         <AuthenticatedImage
           src={video.scene_cover}
-          alt={video.scene_title} 
-          loading="lazy" 
+          alt={video.scene_title}
+          loading="lazy"
           className="stash-card-thumbnail"
+          showPlaceholder={true}
         />
-        {video.scene_preview && (
+        {/* The preview is only mounted on hover, and it will NOT show a placeholder */}
+        {video.scene_preview && isHovering && (
           <AuthenticatedImage
             src={video.scene_preview}
             alt="Scene preview"
@@ -80,9 +93,9 @@ function StashVideoCard({ video, searchTerm }) { // Accept searchTerm prop
           <Highlight text={video.scene_title} search={searchTerm} />
         </h3>
         <p className="stash-card-performers">
-          <Highlight 
-            text={Array.isArray(video.scene_performers) ? video.scene_performers.join(', ') : video.scene_performers} 
-            search={searchTerm} 
+          <Highlight
+            text={Array.isArray(video.scene_performers) ? video.scene_performers.join(', ') : video.scene_performers}
+            search={searchTerm}
           />
         </p>
         <div className="stash-card-metadata">
