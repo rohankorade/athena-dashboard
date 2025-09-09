@@ -4,7 +4,17 @@ import React from 'react';
 import StashVideoCard from './StashVideoCard';
 import PaginationControls from './PaginationControls';
 
-function StashContentArea({ view, data, isLoading, collectionName, searchTerm }) {
+// --- NEW: Helper to format bytes ---
+const formatBytes = (bytes, decimals = 2) => {
+    if (!+bytes) return '0 Bytes'
+    const k = 1024
+    const dm = decimals < 0 ? 0 : decimals
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+}
+
+function StashContentArea({ view, data, isLoading, collectionName, searchTerm, cacheStats, onCacheStatsClick }) {
 
   const renderContent = () => {
     if (isLoading) {
@@ -22,6 +32,10 @@ function StashContentArea({ view, data, isLoading, collectionName, searchTerm })
               <div className="stat-item">
                   <span className="stat-value">{data.stats.totalCollections}</span>
                   <span className="stat-label">Collections</span>
+              </div>
+              <div className="stat-item clickable" onClick={onCacheStatsClick}>
+                  <span className="stat-value">{formatBytes(cacheStats?.totalSize || 0)}</span>
+                  <span className="stat-label">Cache Size</span>
               </div>
           </div>
           <h2>Recently Added</h2>

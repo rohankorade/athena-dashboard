@@ -5,6 +5,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import StashSidebar from '../../components/StashSidebar';
 import StashContentArea from '../../components/StashContentArea';
 import { preloadAuthenticatedImage } from '../../hooks/useAuthenticatedImage';
+import CacheInfoModal from '../../components/CacheInfoModal';
 
 // A custom hook for debouncing a function call, not just a value.
 // This is more suitable for triggering navigation.
@@ -32,6 +33,9 @@ function StashBrowserPage() {
   const [collections, setCollections] = useState([]);
   const [contentData, setContentData] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+
+  const [cacheStats, setCacheStats] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const params = useParams();
   const navigate = useNavigate();
@@ -98,11 +102,13 @@ function StashBrowserPage() {
     
     try {
       if (view === 'dashboard') {
-        const [statsRes, recentRes] = await Promise.all([
+        const [statsRes, recentRes, cacheRes] = await Promise.all([
           fetch('http://localhost:5000/api/stash/dashboard/stats', { headers }),
-          fetch('http://localhost:5000/api/stash/dashboard/recent', { headers })
+          fetch('http://localhost:5000/api/stash/dashboard/recent', { headers }),
+          fetch('http://localhost:5000/api/stash/dashboard/cache-stats', { headers })
         ]);
         setContentData({ stats: await statsRes.json(), recent: await recentRes.json() });
+        setCacheStats(await cacheRes.json()); // Set the cache stats
       } else if (view === 'search' && searchTerm) {
         const res = await fetch(`http://localhost:5000/api/stash/search?q=${searchTerm}&page=${currentPage}`, { headers });
         setContentData(await res.json());
@@ -147,7 +153,13 @@ function StashBrowserPage() {
   }, [contentData.videos]);
 
   return (
-    <div className="stash-browser-layout">
+    <>
+      <CacheInfoModal
+        isOpen={isModalOpen}
+        onRequestClose={() => setIsModalOpen(false)}
+        cacheStats={cacheStats}
+      />
+      <div className="stash-browser-layout">
       <StashSidebar 
         collections={collections}
         searchTerm={inputValue} // The input is controlled by our new state
@@ -160,7 +172,9 @@ function StashBrowserPage() {
         collectionName={collectionName}
         searchTerm={searchTerm} // Content rendering always uses the truth from the URL
       />
-    </div>
+      </div>
+    </>
+    
   );
 }
 

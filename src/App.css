@@ -2074,6 +2074,38 @@ p.time-taken strong {
   color: #888;
 }
 
+/* --- Stash Dashboard Cache Styles --- */
+.stats-grid .stat-item.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.stats-grid .stat-item.clickable:hover {
+  background-color: #282828;
+  transform: translateY(-2px);
+}
+
+/* --- Cache Info Modal Styles --- */
+.cache-stats-details ul {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.cache-stats-details li,
+.cache-stats-details .total-size {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.cache-stats-details .total-size {
+  font-size: 1.1rem;
+  border-top: 2px solid #333;
+  margin-top: 1rem;
+}
+
 /* --- Content Area (POSITIONING FIX) --- */
 .stash-content-area {
   flex-grow: 1;

@@ -635,6 +635,49 @@ stashRouter.get('/dashboard/recent', async (req, res) => {
     }
 });
 
+// --- NEW: GET /api/stash/dashboard/cache-stats ---
+stashRouter.get('/dashboard/cache-stats', async (req, res) => {
+    try {
+        const files = await fs.promises.readdir(cacheDir);
+        let totalSize = 0;
+        const types = {};
+
+        for (const file of files) {
+            const filePath = path.join(cacheDir, file);
+            const stats = await fs.promises.stat(filePath);
+            totalSize += stats.size;
+            const ext = path.extname(file).toLowerCase();
+            types[ext] = (types[ext] || 0) + stats.size;
+        }
+
+        res.json({
+            totalSize,
+            breakdown: types
+        });
+    } catch (error) {
+        // If the cache directory doesn't exist, send back zeros.
+        if (error.code === 'ENOENT') {
+            return res.json({ totalSize: 0, breakdown: {} });
+        }
+        res.status(500).json({ message: 'Error fetching cache stats', error });
+    }
+});
+
+// --- NEW: DELETE /api/stash/clear-cache ---
+stashRouter.delete('/clear-cache', async (req, res) => {
+    try {
+        const files = await fs.promises.readdir(cacheDir);
+        for (const file of files) {
+            await fs.promises.unlink(path.join(cacheDir, file));
+        }
+        console.log('[Cache] All files in cache directory deleted.');
+        res.status(200).json({ message: 'Cache cleared successfully.' });
+    } catch (error) {
+        console.error('[Cache] Error clearing cache:', error);
+        res.status(500).json({ message: 'Failed to clear cache', error });
+    }
+});
+
 // GET /api/stash/image - Caching proxy for images
 stashRouter.get('/image', async (req, res) => {
     const { url } = req.query;
