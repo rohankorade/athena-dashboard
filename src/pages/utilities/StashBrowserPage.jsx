@@ -171,6 +171,8 @@ function StashBrowserPage() {
         isLoading={isLoading}
         collectionName={collectionName}
         searchTerm={searchTerm} // Content rendering always uses the truth from the URL
+        cacheStats={cacheStats}
+        onCacheStatsClick={() => setIsModalOpen(true)}
       />
       </div>
     </>
