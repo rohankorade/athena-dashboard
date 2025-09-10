@@ -36,6 +36,7 @@ function StashBrowserPage() {
 
   const [cacheStats, setCacheStats] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState('asc'); // New state for sorting
 
   const params = useParams();
   const navigate = useNavigate();
@@ -113,7 +114,7 @@ function StashBrowserPage() {
         const res = await fetch(`http://localhost:5000/api/stash/search?q=${searchTerm}&page=${currentPage}`, { headers });
         setContentData(await res.json());
       } else if (collectionName) {
-        const res = await fetch(`http://localhost:5000/api/stash/collections/${collectionName}?page=${currentPage}`, { headers });
+        const res = await fetch(`http://localhost:5000/api/stash/collections/${collectionName}?page=${currentPage}&sort=${sortOrder}`, { headers });
         setContentData(await res.json());
       }
     } catch (error) {
@@ -122,7 +123,7 @@ function StashBrowserPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [view, collectionName, searchTerm, currentPage]);
+  }, [view, collectionName, searchTerm, currentPage, sortOrder]);
 
   useEffect(() => {
     if (location.pathname === '/utilities/stash' || location.pathname === '/utilities/stash/') {
@@ -173,6 +174,8 @@ function StashBrowserPage() {
         searchTerm={searchTerm} // Content rendering always uses the truth from the URL
         cacheStats={cacheStats}
         onCacheStatsClick={() => setIsModalOpen(true)}
+        sortOrder={sortOrder}
+        onSortChange={setSortOrder}
       />
       </div>
     </>

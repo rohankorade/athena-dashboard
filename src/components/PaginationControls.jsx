@@ -3,7 +3,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-function PaginationControls({ currentPage, totalPages, collectionName, view, searchTerm }) {
+function PaginationControls({ currentPage, totalPages, collectionName, view, searchTerm, sortOrder, onSortChange }) {
   if (totalPages <= 1) {
     return null;
   }
@@ -30,6 +30,12 @@ function PaginationControls({ currentPage, totalPages, collectionName, view, sea
 
   return (
     <div className="pagination-controls">
+      <div className="sort-controls">
+        <button onClick={() => onSortChange(sortOrder === 'asc' ? 'desc' : 'asc')} className="button-modern-gray">
+          Sort: {sortOrder === 'asc' ? 'Oldest to Newest' : 'Newest to Oldest'}
+        </button>
+      </div>
+      <div className="page-navigation">
       {/* First Page Button */}
       {canGoBack ? (
         <Link to={firstPagePath} className="button-modern-gray" title="First Page">
@@ -69,6 +75,7 @@ function PaginationControls({ currentPage, totalPages, collectionName, view, sea
       ) : (
         <button disabled className="button-modern-gray">&raquo;</button>
       )}
+      </div>
     </div>
   );
 }

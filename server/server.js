@@ -486,10 +486,13 @@ stashRouter.get('/collections/:collectionName', async (req, res) => {
     try {
         const { collectionName } = req.params;
         const page = parseInt(req.query.page) || 1;
+        const sortOrder = req.query.sort === 'desc' ? 'desc' : 'asc'; // Default to ascending
         const limit = 15;
         const skip = (page - 1) * limit;
 
         const StashModel = stashDb.model(collectionName, StashVideoSchema, collectionName);
+        
+        // --- FIX: Fetch all videos without sorting in the database query ---
         const allVideos = await StashModel.find({}).lean();
 
         const transformedVideos = allVideos.map(video => ({
@@ -499,38 +502,35 @@ stashRouter.get('/collections/:collectionName', async (req, res) => {
                 : (video.scene_performers || [])
         }));
 
+        // --- FIX: Perform date parsing and sorting in JavaScript ---
         const parseDateFromDoc = (doc) => {
             if (doc.scene_date) {
                 try {
+                    // Assuming DD-MM-YYYY format
                     const [day, month, year] = doc.scene_date.split('-');
                     const fullYear = year.length === 4 ? year : `20${year}`;
                     const date = new Date(`${fullYear}-${month}-${day}`);
                     if (!isNaN(date.getTime())) return date;
                 } catch (e) { /* Fall through */ }
             }
-            if (doc.file_title) {
-                const match = doc.file_title.match(/(\d{2})\.(\d{2})\.(\d{2})/);
-                if (match) {
-                    const [_, year, month, day] = match;
-                    const date = new Date(`20${year}`, month - 1, day);
-                    if (!isNaN(date.getTime())) return date;
-                }
-            }
+            // Fallback to createdAt if scene_date is invalid or missing
             return doc.createdAt ? new Date(doc.createdAt) : null;
         };
 
-        // --- FIX: Sort the transformedVideos array IN-PLACE ---
         transformedVideos.sort((a, b) => {
             const dateA = parseDateFromDoc(a);
             const dateB = parseDateFromDoc(b);
 
-            if (dateA && dateB) return dateA - dateB;
-            if (dateA) return -1;
-            if (dateB) return 1;
-            return 0;
+            if (!dateA || !dateB) return 0; // Don't sort items without a valid date
+
+            // Apply sort order
+            if (sortOrder === 'asc') {
+                return dateA - dateB;
+            } else {
+                return dateB - dateA;
+            }
         });
         
-        // --- FIX: Use the now-sorted transformedVideos array for all subsequent operations ---
         const totalVideos = transformedVideos.length;
         const totalPages = Math.ceil(totalVideos / limit);
         const videos = transformedVideos.slice(skip, skip + limit);

@@ -389,7 +389,7 @@ a.button:hover {
   align-items: center;     /* Centers text vertically */
 }
 
-/* 🌊 Modern Blue */
+/* 穴 Modern Blue */
 .button-modern-blue {
   background-color: #3498db; /* Flat Blue */
   color: white;
@@ -405,7 +405,7 @@ a.button:hover {
   background-color: #2980b9; /* Darker Blue */
 }
 
-/* 🌸 Modern Pink */
+/* 減 Modern Pink */
 .button-modern-pink {
   background-color: #e84393; /* Flat Pink */
   color: white;
@@ -422,7 +422,7 @@ a.button:hover {
   color: white;
 }
 
-/* 🌿 Modern Green */
+/* 諺 Modern Green */
 .button-modern-green {
   background-color: #2ecc71; /* Flat Green */
   color: white;
@@ -450,7 +450,7 @@ a.button:hover {
 
 
 
-/* ☁️ Modern Gray */
+/* 笘ｸModern Gray */
 .button-modern-gray {
   background-color: #bdc3c7; /* Flat Gray */
   color: #2c3e50;
@@ -482,7 +482,7 @@ a.button:hover {
 }
 
 
-/* 🔮 Modern Purple */
+/* 醗 Modern Purple */
 .button-modern-purple {
   background-color: #9b59b6; /* Flat Purple */
   color: white;
@@ -2157,13 +2157,18 @@ p.time-taken strong {
   height: 65px;
   padding: 1rem 2rem;
   display: flex;
-  justify-content: center;
+  justify-content: space-between; /* Changed */
   align-items: center;
-  gap: 1rem;
   border-top: 1px solid #282828;
   color: #b3b3b3;
   background-color: #121212;
   flex-shrink: 0;
+}
+
+.page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .loading-message {

@@ -14,7 +14,7 @@ const formatBytes = (bytes, decimals = 2) => {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
 }
 
-function StashContentArea({ view, data, isLoading, collectionName, searchTerm, cacheStats, onCacheStatsClick }) {
+function StashContentArea({ view, data, isLoading, collectionName, searchTerm, cacheStats, onCacheStatsClick, sortOrder, onSortChange }) {
 
   const renderContent = () => {
     if (isLoading) {
@@ -58,6 +58,8 @@ function StashContentArea({ view, data, isLoading, collectionName, searchTerm, c
             collectionName={collectionName}
             view={view}
             searchTerm={searchTerm}
+            sortOrder={sortOrder}
+            onSortChange={onSortChange}
           />
         </div>
       );
