@@ -492,9 +492,14 @@ stashRouter.get('/collections/:collectionName', async (req, res) => {
         const StashModel = stashDb.model(collectionName, StashVideoSchema, collectionName);
         const allVideos = await StashModel.find({}).lean();
 
-        // New, more robust date parsing function
+        const transformedVideos = allVideos.map(video => ({
+            ...video,
+            scene_performers: typeof video.scene_performers === 'string' 
+                ? video.scene_performers.split(',').map(p => p.trim()).filter(Boolean)
+                : (video.scene_performers || [])
+        }));
+
         const parseDateFromDoc = (doc) => {
-            // Priority 1: Use the dedicated scene_date field (DD-MM-YYYY)
             if (doc.scene_date) {
                 try {
                     const [day, month, year] = doc.scene_date.split('-');
@@ -503,8 +508,6 @@ stashRouter.get('/collections/:collectionName', async (req, res) => {
                     if (!isNaN(date.getTime())) return date;
                 } catch (e) { /* Fall through */ }
             }
-
-            // Priority 2: Fallback to parsing the file_title (YY.MM.DD)
             if (doc.file_title) {
                 const match = doc.file_title.match(/(\d{2})\.(\d{2})\.(\d{2})/);
                 if (match) {
@@ -513,24 +516,24 @@ stashRouter.get('/collections/:collectionName', async (req, res) => {
                     if (!isNaN(date.getTime())) return date;
                 }
             }
-            
-            // Priority 3: Use the MongoDB timestamp
             return doc.createdAt ? new Date(doc.createdAt) : null;
         };
 
-        allVideos.sort((a, b) => {
+        // --- FIX: Sort the transformedVideos array IN-PLACE ---
+        transformedVideos.sort((a, b) => {
             const dateA = parseDateFromDoc(a);
             const dateB = parseDateFromDoc(b);
 
-            if (dateA && dateB) return dateA - dateB; // Sort oldest to latest
-            if (dateA) return -1; // Videos with dates come before those without
+            if (dateA && dateB) return dateA - dateB;
+            if (dateA) return -1;
             if (dateB) return 1;
-            return 0; // Keep original order if neither has a date
+            return 0;
         });
         
-        const totalVideos = allVideos.length;
+        // --- FIX: Use the now-sorted transformedVideos array for all subsequent operations ---
+        const totalVideos = transformedVideos.length;
         const totalPages = Math.ceil(totalVideos / limit);
-        const videos = allVideos.slice(skip, skip + limit);
+        const videos = transformedVideos.slice(skip, skip + limit);
 
         res.json({ videos, currentPage: page, totalPages });
     } catch (error) {
@@ -552,15 +555,13 @@ stashRouter.get('/search', async (req, res) => {
         const collections = await stashDb.db.listCollections().toArray();
         let allResults = [];
 
-        // --- NEW: Split search query into individual terms ---
         const searchTerms = q.split(' ').filter(term => term.length > 0);
 
         for (const col of collections) {
             const StashModel = stashDb.model(col.name, StashVideoSchema, col.name);
 
-            // --- NEW: Create a complex query to match all terms in either title or performers ---
             const andConditions = searchTerms.map(term => {
-                const termRegex = new RegExp(term, 'i'); // Case-insensitive regex for each term
+                const termRegex = new RegExp(term, 'i');
                 return {
                     $or: [
                         { scene_title: termRegex },
@@ -575,12 +576,20 @@ stashRouter.get('/search', async (req, res) => {
             allResults.push(...resultsInCollection);
         }
 
-        // --- NEW: Sort and paginate the aggregated results ---
-        allResults.sort((a, b) => a.scene_title.localeCompare(b.scene_title));
+        // --- FIX: Apply the transformation to the search results ---
+        const transformedResults = allResults.map(video => ({
+            ...video,
+            scene_performers: typeof video.scene_performers === 'string' 
+                ? video.scene_performers.split(',').map(p => p.trim()).filter(Boolean)
+                : (video.scene_performers || [])
+        }));
+
+        // Sort and paginate the TRANSFORMED results
+        transformedResults.sort((a, b) => a.scene_title.localeCompare(b.scene_title));
         
-        const totalVideos = allResults.length;
+        const totalVideos = transformedResults.length;
         const totalPages = Math.ceil(totalVideos / limit);
-        const paginatedVideos = allResults.slice(skip, skip + limit);
+        const paginatedVideos = transformedResults.slice(skip, skip + limit);
 
         res.json({ 
             videos: paginatedVideos, 
@@ -620,16 +629,26 @@ stashRouter.get('/dashboard/recent', async (req, res) => {
         for (const col of collections) {
             const StashModel = stashDb.model(col.name, StashVideoSchema, col.name);
             const videos = await StashModel.find({})
-                .sort({ createdAt: -1 }) // Sort by newest
-                .limit(9) // Get the top 5 from each collection
+                .sort({ createdAt: -1 })
+                .limit(9)
                 .lean();
             recentVideos.push(...videos);
         }
         
-        // Sort the aggregated results to find the absolute newest
         recentVideos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-        res.json(recentVideos.slice(0, 9)); // Return the top 5 overall
+        const topRecent = recentVideos.slice(0, 9);
+
+        // --- FIX: Apply the transformation to the final list of recent videos ---
+        const transformedRecent = topRecent.map(video => ({
+            ...video,
+            scene_performers: typeof video.scene_performers === 'string'
+                ? video.scene_performers.split(',').map(p => p.trim()).filter(Boolean)
+                : (video.scene_performers || [])
+        }));
+
+        res.json(transformedRecent); // Send the transformed array
+
     } catch (error) {
         res.status(500).json({ message: 'Error fetching recent videos', error });
     }

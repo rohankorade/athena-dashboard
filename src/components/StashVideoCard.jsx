@@ -16,33 +16,33 @@ const formatDate = (dateString) => {
   }
 };
 
-// --- MODIFIED SUB-COMPONENT ---
-// It now accepts a 'showPlaceholder' prop to control its loading behavior.
 const AuthenticatedImage = ({ src, showPlaceholder = false, ...props }) => {
   const apiUrl = src ? `/api/stash/image?url=${encodeURIComponent(src)}` : null;
   const { imageSrc, loading, error, isCorrupt } = useAuthenticatedImage(apiUrl);
 
-  // If the server says the image is bad, render nothing.
   if (isCorrupt) {
     return null;
   }
-
-  // If loading, decide whether to show a placeholder or nothing at all.
   if (loading) {
     return showPlaceholder ? <div className="image-placeholder"></div> : null;
   }
-
   if (error) {
-    // Only show an error if a placeholder is also requested.
     return showPlaceholder ? <div className="image-placeholder">Error</div> : null;
   }
-
   return imageSrc ? <img src={imageSrc} {...props} /> : null;
 };
 
 function StashVideoCard({ video, searchTerm }) {
   const navigate = useNavigate();
   const [isHovering, setIsHovering] = useState(false);
+
+  // --- NEW: Handler for clicking a performer's name ---
+  const handlePerformerClick = (performerName) => {
+    const trimmedName = performerName.trim();
+    if (trimmedName) {
+      navigate(`/utilities/stash/search/${encodeURIComponent(trimmedName)}/page/1`);
+    }
+  };
 
   const handlePlay = () => {
     if (video.file_video_type === 'MP4' && video.file_link.includes('/file/')) {
@@ -59,7 +59,7 @@ function StashVideoCard({ video, searchTerm }) {
       .then(() => alert('Link copied!'))
       .catch(err => console.error('Failed to copy: ', err));
   };
-
+  
   const handleSource = () => {
     window.open(video.scene_url, '_blank', 'noopener,noreferrer');
   };
@@ -71,7 +71,6 @@ function StashVideoCard({ video, searchTerm }) {
       onMouseLeave={() => setIsHovering(false)}
     >
       <div className="stash-card-visual">
-        {/* The cover image shows a placeholder while it loads */}
         <AuthenticatedImage
           src={video.scene_cover}
           alt={video.scene_title}
@@ -79,7 +78,6 @@ function StashVideoCard({ video, searchTerm }) {
           className="stash-card-thumbnail"
           showPlaceholder={true}
         />
-        {/* The preview is only mounted on hover, and it will NOT show a placeholder */}
         {video.scene_preview && isHovering && (
           <AuthenticatedImage
             src={video.scene_preview}
@@ -92,16 +90,21 @@ function StashVideoCard({ video, searchTerm }) {
         <h3 className="stash-card-title" title={video.scene_title}>
           <Highlight text={video.scene_title} search={searchTerm} />
         </h3>
+        {/* --- MODIFIED: This block now renders clickable performer names --- */}
         <p className="stash-card-performers">
-          <Highlight
-            text={Array.isArray(video.scene_performers) ? video.scene_performers.join(', ') : video.scene_performers}
-            search={searchTerm}
-          />
+          {(video.scene_performers || []).map((name, index, arr) => (
+            <React.Fragment key={name}>
+              <button className="performer-link" onClick={() => handlePerformerClick(name)}>
+                <Highlight text={name} search={searchTerm} />
+              </button>
+              {index < arr.length - 1 && ', '}
+            </React.Fragment>
+          ))}
         </p>
         <div className="stash-card-metadata">
           <span>🗓️ {formatDate(video.scene_date)}</span>
           <span>💾 {video.file_size}</span>
-          <span className="collection-tag">{video.collection}</span>
+          <span className="collection-tag">{video.collectionName}</span>
         </div>
       </div>
       <div className="stash-card-actions">

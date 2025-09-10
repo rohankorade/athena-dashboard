@@ -2189,7 +2189,6 @@ p.time-taken strong {
 
 .stash-card:hover {
   border-color: #404040;
-  transform: translateY(-4px);
 }
 
 .stash-card-visual {
@@ -2254,6 +2253,24 @@ p.time-taken strong {
   overflow: hidden;
   text-overflow: ellipsis;
   flex-grow: 1;
+} 
+
+/* --- Stash Performer Link Styles --- */
+.performer-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit; /* Inherits the color from .stash-card-performers */
+  cursor: pointer;
+  text-decoration: none;
+  display: inline;
+}
+
+.performer-link:hover {
+  text-decoration: underline;
+  color: #fff; /* Make it white on hover for better visibility */
 }
 
 .stash-card-metadata {
