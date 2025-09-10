@@ -1,14 +1,42 @@
 // src/components/PaginationControls.jsx
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useHistory } from 'react-router-dom';
 
 function PaginationControls({ currentPage, totalPages, collectionName, view, searchTerm, sortOrder, onSortChange }) {
+  const [pageInput, setPageInput] = useState(currentPage);
+  const history = useHistory();
+
+  useEffect(() => {
+    setPageInput(currentPage);
+  }, [currentPage]);
+
   if (totalPages <= 1) {
     return null;
   }
 
-  // --- NEW: Generate all four navigation paths ---
+  const handlePageInputChange = (e) => {
+    setPageInput(e.target.value);
+  };
+
+  const handlePageInputSubmit = (e) => {
+    e.preventDefault();
+    const pageNum = parseInt(pageInput, 10);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      let newPath;
+      if (view === 'search') {
+        const encodedSearchTerm = encodeURIComponent(searchTerm);
+        newPath = `/utilities/stash/search/${encodedSearchTerm}/page/${pageNum}`;
+      } else {
+        newPath = `/utilities/stash/${collectionName}/page/${pageNum}`;
+      }
+      history.push(newPath);
+    } else {
+      // If input is invalid, reset it to the current page
+      setPageInput(currentPage);
+    }
+  };
+
   let firstPagePath, prevPagePath, nextPagePath, lastPagePath;
 
   if (view === 'search') {
@@ -24,57 +52,55 @@ function PaginationControls({ currentPage, totalPages, collectionName, view, sea
     lastPagePath = `/utilities/stash/${collectionName}/page/${totalPages}`;
   }
 
-  // --- NEW: Simplified conditions for disabling buttons ---
   const canGoBack = currentPage > 1;
   const canGoForward = currentPage < totalPages;
 
   return (
     <div className="pagination-controls">
       <div className="sort-controls">
-        <button onClick={() => onSortChange(sortOrder === 'asc' ? 'desc' : 'asc')} className="button-modern-gray">
-          Sort: {sortOrder === 'asc' ? 'Oldest to Newest' : 'Newest to Oldest'}
+        <button
+          onClick={() => onSortChange(sortOrder === 'asc' ? 'desc' : 'asc')}
+          className="button-modern-gray"
+          title={`Sort: ${sortOrder === 'asc' ? 'Oldest to Newest' : 'Newest to Oldest'}`}
+        >
+          {sortOrder === 'asc' ? '↑' : '↓'}
         </button>
       </div>
       <div className="page-navigation">
-      {/* First Page Button */}
-      {canGoBack ? (
-        <Link to={firstPagePath} className="button-modern-gray" title="First Page">
-          &laquo;
-        </Link>
-      ) : (
-        <button disabled className="button-modern-gray">&laquo;</button>
-      )}
+        {canGoBack ? (
+          <Link to={firstPagePath} className="button-modern-gray" title="First Page">&laquo;</Link>
+        ) : (
+          <button disabled className="button-modern-gray">&laquo;</button>
+        )}
 
-      {/* Previous Page Button */}
-      {canGoBack ? (
-        <Link to={prevPagePath} className="button-modern-gray">
-          &larr; Previous
-        </Link>
-      ) : (
-        <button disabled className="button-modern-gray">&larr; Previous</button>
-      )}
-      
-      <span>
-        Page {currentPage} of {totalPages}
-      </span>
+        {canGoBack ? (
+          <Link to={prevPagePath} className="button-modern-gray" title="Previous Page">&larr;</Link>
+        ) : (
+          <button disabled className="button-modern-gray">&larr;</button>
+        )}
 
-      {/* Next Page Button */}
-      {canGoForward ? (
-        <Link to={nextPagePath} className="button-modern-gray">
-          Next &rarr;
-        </Link>
-      ) : (
-        <button disabled className="button-modern-gray">Next &rarr;</button>
-      )}
+        <form onSubmit={handlePageInputSubmit} className="page-input-form">
+          <input
+            type="text"
+            value={pageInput}
+            onChange={handlePageInputChange}
+            className="page-input"
+            aria-label={`Page ${currentPage} of ${totalPages}`}
+          />
+          <span>/ {totalPages}</span>
+        </form>
 
-      {/* Last Page Button */}
-      {canGoForward ? (
-        <Link to={lastPagePath} className="button-modern-gray" title="Last Page">
-          &raquo;
-        </Link>
-      ) : (
-        <button disabled className="button-modern-gray">&raquo;</button>
-      )}
+        {canGoForward ? (
+          <Link to={nextPagePath} className="button-modern-gray" title="Next Page">&rarr;</Link>
+        ) : (
+          <button disabled className="button-modern-gray">&rarr;</button>
+        )}
+
+        {canGoForward ? (
+          <Link to={lastPagePath} className="button-modern-gray" title="Last Page">&raquo;</Link>
+        ) : (
+          <button disabled className="button-modern-gray">&raquo;</button>
+        )}
       </div>
     </div>
   );

@@ -2168,7 +2168,42 @@ p.time-taken strong {
 .page-navigation {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem; /* Reduced gap for a tighter look */
+}
+
+/* --- New styles for the page input form --- */
+.page-input-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.page-input {
+  width: 50px; /* A fixed, small width */
+  background-color: #282828;
+  border: 1px solid #404040;
+  color: #fff;
+  text-align: center;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 0.9rem;
+}
+
+.page-input:focus {
+  outline: none;
+  border-color: #1db954;
+}
+
+/* --- Adjustments for icon-only buttons --- */
+.pagination-controls .button-modern-gray {
+  padding: 8px 12px; /* Make buttons less wide */
+}
+
+/* --- Adjustments for sort button --- */
+.sort-controls .button-modern-gray {
+  padding: 8px 12px;
+  font-size: 1.2rem; /* Make the arrow icon a bit bigger */
+  line-height: 1;
 }
 
 .loading-message {
