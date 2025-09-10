@@ -1,11 +1,11 @@
 // src/components/PaginationControls.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Link, useHistory } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function PaginationControls({ currentPage, totalPages, collectionName, view, searchTerm, sortOrder, onSortChange }) {
   const [pageInput, setPageInput] = useState(currentPage);
-  const history = useHistory();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setPageInput(currentPage);
@@ -30,7 +30,7 @@ function PaginationControls({ currentPage, totalPages, collectionName, view, sea
       } else {
         newPath = `/utilities/stash/${collectionName}/page/${pageNum}`;
       }
-      history.push(newPath);
+      navigate(newPath);
     } else {
       // If input is invalid, reset it to the current page
       setPageInput(currentPage);
